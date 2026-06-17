@@ -74,6 +74,15 @@ export interface MessagingClient {
   ): Promise<DmMessage>;
   /** Update the consent state of the DM with `peerAddress`. */
   setConsent(peerAddress: Address, consent: DmConsent): Promise<void>;
-  /** Close the underlying SDK database connection. */
+  /**
+   * Stream all incoming DM messages in real time via a long-lived connection.
+   * Returns an `AsyncIterable` that yields `DmMessage` objects as they arrive.
+   * Callers must call `close()` when done to tear down the stream.
+   *
+   * Prefer this over polling `sync()` + `listDms()` to avoid XMTP read rate
+   * limits (20 000 reads / 5 min). The stream makes ≈ zero requests at rest.
+   */
+  streamAllMessages(): AsyncIterable<DmMessage & { peerAddress: Address | null }>;
+  /** Close the underlying SDK database connection and any active streams. */
   close(): Promise<void>;
 }

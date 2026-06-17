@@ -12,6 +12,7 @@ const fakeClient = {
   readMessages: vi.fn(async () => []),
   sendText: vi.fn(),
   setConsent: vi.fn(async () => {}),
+  streamAllMessages: vi.fn(),
   close: vi.fn(async () => {}),
 };
 
@@ -128,6 +129,7 @@ describe("dm command", () => {
     fakeClient.readMessages.mockClear();
     fakeClient.sendText.mockReset();
     fakeClient.setConsent.mockClear();
+    fakeClient.streamAllMessages.mockReset();
     fakeClient.close.mockClear();
     vi.mocked(createMessagingClient).mockClear();
   });
@@ -201,6 +203,41 @@ describe("dm command", () => {
     await run(["send", PEER, "gm"]);
     const out = jsonOut();
     expect(out).toMatchObject({ sent: true, to: PEER, text: "gm" });
+  });
+
+  it("listen streams incoming messages as JSON and skips self", async () => {
+    fakeClient.streamAllMessages.mockImplementationOnce(() =>
+      (async function* () {
+        yield {
+          id: "m0",
+          senderAddress: fakeClient.address,
+          fromSelf: true,
+          text: "my own message",
+          contentType: "xmtp.org/text:1.0",
+          sentAtMs: 1000,
+          peerAddress: PEER,
+        };
+        yield {
+          id: "m1",
+          senderAddress: PEER,
+          fromSelf: false,
+          text: "gm from a peer",
+          contentType: "xmtp.org/text:1.0",
+          sentAtMs: 2000,
+          peerAddress: PEER,
+        };
+      })(),
+    );
+    await run(["listen"]);
+    // Only the peer message is emitted; the self message is skipped, so the
+    // single logged line parses cleanly.
+    const out = jsonOut();
+    expect(out).toMatchObject({
+      address: PEER,
+      text: "gm from a peer",
+      contentType: "xmtp.org/text:1.0",
+    });
+    expect(fakeClient.close).toHaveBeenCalled();
   });
 
   it("enforces the new-conversation gate in smart-wallet mode (Privy token present)", async () => {

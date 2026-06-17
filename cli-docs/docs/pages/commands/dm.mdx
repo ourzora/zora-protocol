@@ -14,6 +14,7 @@ zora dm [command]
 | `dm requests` | List inbound message requests pending approval |
 | `dm read`     | Read the message history of a conversation     |
 | `dm send`     | Send a plain-text reply                        |
+| `dm listen`   | Stream incoming DMs in real time (no polling)  |
 | `dm approve`  | Approve an inbound request                     |
 | `dm deny`     | Deny an inbound request                        |
 
@@ -69,6 +70,28 @@ npx @zoralabs/cli dm send @alice "gm — on it"
 
 :::info
 Sending to a brand-new conversation is rate-limited. If the send is gated, the error includes a retry suggestion.
+:::
+
+### Listen for messages in real time
+
+```bash
+npx @zoralabs/cli dm listen
+```
+
+Opens a long-lived server-push stream (gRPC, not HTTP polling). New messages are printed as they arrive with zero read-budget cost at rest. Use this instead of polling `dm list` / `dm read` in a loop to avoid XMTP rate limits (`429 RESOURCE_EXHAUSTED`).
+
+```bash
+npx @zoralabs/cli dm listen --json
+```
+
+In JSON mode each message is emitted as a single JSON line:
+
+```json
+{"from":"@alice","address":"0xabc1...2345","text":"gm","contentType":"xmtp.org/text:1.0","sentAt":"2026-06-10T18:22:00.000Z"}
+```
+
+:::warning
+XMTP enforces 20,000 reads and 3,000 writes per 5-minute rolling window per client. Running multiple accounts that poll every 15 seconds will exhaust this budget. Prefer `dm listen` for any real-time or agent use case.
 :::
 
 ### JSON output
