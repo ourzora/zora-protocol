@@ -62,6 +62,7 @@ jobs:
         uses: anthropics/claude-code-action@beta
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          model: claude-sonnet-4-6-20250514
 
           # Prompt is read from .github/claude-code-review-prompt.md
           # This allows editing the prompt without triggering workflow validation issues
