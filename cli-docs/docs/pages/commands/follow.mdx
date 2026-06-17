@@ -1,0 +1,86 @@
+# follow / unfollow
+
+Follow and unfollow other Zora accounts from the CLI. Requires a [wallet](/commands/setup); signs in with the configured wallet's Privy session.
+
+```bash
+zora follow [identifier]
+zora unfollow [identifier]
+```
+
+## Arguments
+
+| Argument     | Description                                                                              |
+| ------------ | ---------------------------------------------------------------------------------------- |
+| `identifier` | A username (with or without a leading `@`), a wallet address (`0x...`), or an account id |
+
+## Options
+
+| Flag     | Description                  |
+| -------- | ---------------------------- |
+| `--json` | Machine-readable JSON output |
+
+:::warning
+**Following requires holding the target's creator coin.** `zora follow` resolves the target profile's creator coin and reads your on-chain balance of it (your [smart wallet](/guides/wallet-modes) when configured, otherwise your EOA — wherever `zora buy` deposits). If you hold none, it refuses and prints the exact buy command to run first. The gate runs **before** sign-in, so it fails fast. `zora unfollow` is never gated — you can always walk a follow back.
+:::
+
+## Follow someone
+
+To follow an account you don't yet hold a coin of, buy a little of their creator coin first, then follow. The error from `follow` hands you the precise `buy` command if you skip this step.
+
+```bash
+# 1. Try to follow — if you don't hold the coin, this tells you what to buy
+npx @zoralabs/cli follow alexciminillo
+# → Error: You must hold @alexciminillo's creator coin to follow them.
+#   Buy some first: zora buy 0x2a8f...4abc --eth 0.001
+
+# 2. Buy a little of their creator coin (any non-zero balance satisfies the gate)
+npx @zoralabs/cli buy 0x2a8f...4abc --eth 0.001 --yes --json
+
+# 3. Follow
+npx @zoralabs/cli follow alexciminillo --json
+```
+
+:::info
+Buying a creator coin spends real funds and counts against your [spending budget](/commands/agent#agent-budget). Any non-zero balance satisfies the follow gate — a minimal buy (e.g. `--eth 0.001`) is enough; you don't need a specific number of tokens. If you already hold a creator's coin (for example after a [`social-trader`](/guides/agent-skills) buy), following is free.
+:::
+
+### Examples
+
+```bash
+# Follow by username (a leading @ is accepted)
+npx @zoralabs/cli follow @wbnns --json
+
+# Follow by wallet address
+npx @zoralabs/cli follow 0x3a5df03dd1a001d7055284c2c2c147cbbc78d142 --json
+
+# Unfollow (never gated)
+npx @zoralabs/cli unfollow @wbnns --json
+```
+
+### JSON output
+
+```bash
+npx @zoralabs/cli follow wbnns --json
+```
+
+```json
+{
+  "action": "follow",
+  "followee": "acct_abc123",
+  "handle": "wbnns",
+  "followingStatus": "FOLLOWING",
+  "profileUrl": "https://zora.co/@wbnns"
+}
+```
+
+#### JSON Fields
+
+| Field             | Type   | Description                                                                                                                       |
+| ----------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| `action`          | string | `follow` or `unfollow`                                                                                                            |
+| `followee`        | string | The target's account id                                                                                                           |
+| `handle`          | string | The target's handle (a truncated address if they have no Zora handle)                                                             |
+| `followingStatus` | string | `FOLLOWING`, `MUTUAL_FOLLOWING` (you follow each other), `FOLLOWED` (they still follow you), or `NOT_FOLLOWING` after an unfollow |
+| `profileUrl`      | string | Link to the target's Zora profile — omitted when they have no handle                                                              |
+
+Following yourself is rejected, and following a profile that has no creator coin errors (there's nothing to hold). Unfollowing has no coin requirement.

@@ -1,0 +1,311 @@
+/* iMessage-style DM panel shown in the hero while the word is "DMs".
+   Real DOM (crisp + responsive); layout mirrors DM.png / DM-header.png. */
+.panel {
+  display: flex;
+  flex-direction: column;
+  width: clamp(340px, 30vw, 400px);
+  max-width: 100%;
+  margin-inline: auto;
+  background: #ffffff;
+  border: 1px solid #e4e4e4;
+  border-radius: var(--agents-radius);
+  box-shadow: 0 12px 40px rgba(18, 18, 18, 0.18);
+  overflow: hidden;
+  text-align: left;
+}
+
+/* ---- Header (mirrors DM-header.png) -------------------------------------- */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.back {
+  flex-shrink: 0;
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  color: #b5b5b5;
+}
+
+.avatar {
+  position: relative;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+}
+
+/* Circular clip for the avatar portrait; kept separate from .avatar so the
+   online dot (which overhangs the edge) isn't clipped away. */
+.avatarCrop {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #f2f2f2;
+}
+
+/* The Zari card art (968×601) frames her portrait avatar in the top-left;
+   scale the whole card up and offset so just that portrait fills the 40px
+   circle. Offsets are tied to this size — revisit if the avatar resizes. */
+.avatarImg {
+  position: absolute;
+  top: -12px;
+  left: -17px;
+  width: 219px;
+  height: auto;
+  max-width: none;
+  user-select: none;
+}
+
+.onlineDot {
+  position: absolute;
+  z-index: 1;
+  right: -1px;
+  bottom: -1px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--agents-green);
+  border: 2px solid #ffffff;
+}
+
+.identity {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  /* Push the Trade pill + overflow to the right edge. */
+  margin-right: auto;
+}
+
+.name {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--agents-ink);
+}
+
+.sub {
+  font-size: 13px;
+  line-height: 1.15;
+  color: #969696;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Green CTA pill — the page's brand green, with ink text (matches how the site
+   uses brand green as a button fill; white on #3fff00 fails contrast). */
+.trade {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 16px;
+  border-radius: 999px;
+  background: var(--agents-green);
+  color: var(--agents-ink);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.more {
+  flex-shrink: 0;
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  color: #c2c2c2;
+}
+
+.back svg,
+.more svg,
+.photo svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ---- Thread -------------------------------------------------------------- */
+.thread {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 16px 10px;
+}
+
+/* Reserve the space the agent's replies will occupy, so the panel never grows or
+   jumps as the typing indicator and replies arrive. The two short single-line
+   replies measure ~71px at every width; round up so the slot is always large
+   enough for the typing bubble and both replies. */
+.incomingArea {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 72px;
+}
+
+.dayStamp {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin: 0 0 4px;
+}
+
+.dayLabel {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #8a8a8a;
+}
+
+.dayTime {
+  font-size: 12px;
+  color: #b5b5b5;
+}
+
+.bubbleRow {
+  display: flex;
+}
+
+.outgoingRow {
+  justify-content: flex-end;
+}
+
+.incomingRow {
+  justify-content: flex-start;
+}
+
+.bubble {
+  position: relative;
+  max-width: 78%;
+  padding: 8px 14px;
+  border-radius: 18px;
+  font-size: 15px;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  word-break: break-word;
+}
+
+/* Bubble corners — the tail-side bottom corner is tucked in (small radius) while
+   the other three stay fully round. This is the clean, modern iMessage read used
+   for grouped messages: unmistakably an iOS thread, and rock-solid at every size
+   and device-pixel-ratio (pure border-radius — nothing to misalign). */
+.outgoing {
+  background: #007aff;
+  color: #ffffff;
+  border-bottom-right-radius: 6px;
+}
+
+.incoming {
+  background: #e9e9eb;
+  color: var(--agents-ink);
+  border-bottom-left-radius: 6px;
+}
+
+/* Grouped bubbles (same sender, not the last in the run) round fully — only the
+   final bubble keeps the tucked corner — and sit tighter, as iOS clusters them. */
+.noTail {
+  border-bottom-left-radius: 18px;
+}
+
+.groupedRow {
+  /* Offsets the .thread row gap (6px) down to the ~2px iOS uses within a run. */
+  margin-bottom: -4px;
+}
+
+/* Typing indicator — three dots breathing in a gray bubble. Origin sits at the
+   tail corner so the bubble scales up from where it's anchored, like iOS. */
+.typing {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 12px 14px;
+  transform-origin: bottom left;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #9a9a9f;
+  animation: dmTypingPulse 1.15s ease-in-out infinite;
+}
+
+.dot:nth-child(2) {
+  animation-delay: 0.18s;
+}
+
+.dot:nth-child(3) {
+  animation-delay: 0.36s;
+}
+
+/* iOS dots breathe via opacity + a subtle scale rather than a bounce. */
+@keyframes dmTypingPulse {
+  0%,
+  60%,
+  100% {
+    opacity: 0.4;
+    transform: scale(0.85);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ---- Input bar ----------------------------------------------------------- */
+.inputBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px 12px;
+}
+
+.photo {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid #e4e4e4;
+  color: #b5b5b5;
+}
+
+.photo svg {
+  width: 20px;
+  height: 20px;
+}
+
+.inputField {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 16px;
+  border-radius: 999px;
+  background: #f2f2f3;
+  color: #9a9a9f;
+  font-size: 15px;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+@media (max-width: 768px) {
+  .panel {
+    width: min(360px, 88vw);
+  }
+}
+
+/* Reduced motion: never run the typing-dot keyframes. */
+@media (prefers-reduced-motion: reduce) {
+  .dot {
+    animation: none;
+    opacity: 0.6;
+  }
+}

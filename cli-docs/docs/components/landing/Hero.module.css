@@ -1,0 +1,126 @@
+.hero {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 100dvh;
+  overflow: hidden;
+  padding: clamp(64px, 10vh, 120px) 20px clamp(48px, 8vh, 96px);
+}
+
+/* ---- Decorative background -------------------------------------------- */
+
+.background {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-background);
+  pointer-events: none;
+  user-select: none;
+  /* The brand-supplied prismatic light-burst artwork (optimized webp). The
+     bright core is positioned just behind the headline. */
+  background-image: url("/hero-bg.webp");
+  background-repeat: no-repeat;
+  background-position: center 32%;
+  background-size: cover;
+  background-color: #ffffff;
+}
+
+/* Bottom fade so the full-bleed hero blends into the white sections below. */
+.hero::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 32%;
+  /* Above the background, below .content — local to the hero's `isolation:
+     isolate` stacking context (not a page-level layer, so not on the token scale). */
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0) 0%,
+    #ffffff 100%
+  );
+}
+
+/* Optional video bg, hidden until wired up. */
+.bgVideo {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-background);
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ---- Content ---------------------------------------------------------- */
+
+.content {
+  position: relative;
+  z-index: var(--z-content);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(28px, 4vh, 48px);
+  width: 100%;
+  max-width: 1000px;
+}
+
+.intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+}
+
+.subhead {
+  /* Keep the muted brand feel while meeting contrast on the bright hero art. */
+  font-size: clamp(1.25rem, 2.2vw, 1.75rem);
+  font-weight: 400;
+  /* ≥1 so the line never overlaps if the subhead copy ever wraps. */
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  font-feature-settings:
+    "ss11" 1,
+    "ss05" 1,
+    "calt" 0;
+  color: rgba(18, 18, 18, 0.72);
+  margin: 0;
+}
+
+.cta {
+  display: flex;
+  justify-content: center;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 768px) {
+  .hero {
+    /* allow the card row to scroll edge-to-edge without clipping shadows */
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .intro,
+  .cta,
+  .content > :last-child {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+}

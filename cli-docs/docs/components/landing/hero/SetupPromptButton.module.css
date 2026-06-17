@@ -1,0 +1,96 @@
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  /* 44px+ tap target. */
+  min-height: 56px;
+  padding: 0 30px;
+  /* Figma 2093:22 rounds the CTA (radius ≈ 0.24 × height) — follow the design.
+     The page's shared radius token traces back to this button. */
+  border-radius: var(--agents-radius);
+  border: 1px solid var(--agents-ink);
+  background: var(--agents-ink);
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 20px;
+  font-weight: 500;
+  cursor: pointer;
+  /* Color only — the hover-grow / press-shrink transform is a framer spring. */
+  transition:
+    background-color 180ms var(--ease-out-quart),
+    color 180ms var(--ease-out-quart);
+  will-change: transform;
+}
+
+.pill[data-copied="true"] {
+  background: var(--agents-green);
+  border-color: var(--agents-green);
+  color: var(--agents-ink);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pill:hover {
+    background: #000000;
+  }
+  .pill[data-copied="true"]:hover {
+    background: var(--agents-green-bright);
+  }
+}
+
+.pill:focus-visible {
+  outline: 2px solid var(--agents-green);
+  outline-offset: 3px;
+}
+
+.icon {
+  position: relative;
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+}
+
+.glyph {
+  position: absolute;
+  inset: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 160ms var(--ease-out-quart);
+}
+
+.glyph[data-show="true"] {
+  opacity: 1;
+}
+
+.labelSlot {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Invisible sizer holds the wider label width so the pill never resizes. */
+.labelSizer {
+  visibility: hidden;
+  white-space: nowrap;
+}
+
+.label {
+  position: absolute;
+  inset: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pill {
+    transition: none;
+  }
+  .glyph {
+    transition: none;
+  }
+}

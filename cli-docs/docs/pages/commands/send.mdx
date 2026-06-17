@@ -28,6 +28,10 @@ zora send [typeOrId] [identifier] [options]
 Amount flags (`--amount`, `--percent`, `--all`) are mutually exclusive — use exactly one.
 :::
 
+:::warning
+**Spending budget.** When a global [spending budget](/commands/agent#agent-budget) is configured, `send` enforces it: a transfer that would exceed the remaining cap is blocked (with a message pointing to `zora agent budget set` / `reset` / `--no-limit`), and a successful send is automatically recorded in the budget ledger. Sends are unrestricted when no budget is set or it's opted out.
+:::
+
 ## Examples
 
 ### Send ETH

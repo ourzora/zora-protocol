@@ -139,6 +139,19 @@ const zoraDark = {
 };
 
 export default defineConfig({
+  // The landing page uses `motion` + `@number-flow/react`. Pre-bundle them so
+  // Vite links their `react` import to the same optimized React chunk Vocs
+  // uses, and dedupe React/React-DOM so there is only ever one copy at runtime
+  // (otherwise motion's `useReducedMotion` reads a null React → invalid hook
+  // call). Vocs merges this `vite` block into its own config.
+  vite: {
+    resolve: {
+      dedupe: ["react", "react-dom"],
+    },
+    optimizeDeps: {
+      include: ["motion", "motion/react", "@number-flow/react"],
+    },
+  },
   title: "Zora CLI",
   titleTemplate: "%s — Zora CLI",
   logoUrl: "/zorb.svg",
@@ -206,6 +219,7 @@ export default defineConfig({
         { text: "buy", link: "/commands/buy" },
         { text: "sell", link: "/commands/sell" },
         { text: "send", link: "/commands/send" },
+        { text: "comment", link: "/commands/comment" },
         { text: "create", link: "/commands/create" },
         { text: "balance", link: "/commands/balance" },
         {
@@ -231,6 +245,7 @@ export default defineConfig({
           link: "/commands/agent",
           items: [
             { text: "agent create", link: "/commands/agent#agent-create" },
+            { text: "agent coin", link: "/commands/agent#agent-coin" },
             {
               text: "agent connect-email",
               link: "/commands/agent#agent-connect-email",
@@ -239,6 +254,7 @@ export default defineConfig({
           ],
         },
         { text: "dm", link: "/commands/dm" },
+        { text: "follow", link: "/commands/follow" },
         { text: "skills", link: "/commands/skills" },
       ],
     },

@@ -1,0 +1,122 @@
+.viewport {
+  /* Reserve the TALLEST stage (the DM panel, ~335px) so swapping the card row
+     <-> DM panel never shifts the CTA / agent row below. popLayout pulls the
+     exiting stage out of flow; this min-height holds the cell. Tunable. */
+  display: grid;
+  /* Explicit single column so the track is bounded by the container width and
+     never grows to the content's max-content (the 3-card row ~1000px) — that
+     blowout is what let the deck escape the viewport on mobile. */
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  max-width: 1000px;
+  min-width: 0;
+  min-height: 352px;
+  align-items: center;
+  justify-items: center;
+}
+
+/* Cross-fade layer — both presence stages occupy the same grid cell so they
+   morph in place. Holds either the card row or the DM panel, centered. */
+.stage {
+  grid-area: 1 / 1;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  will-change: transform;
+}
+
+/* Finished card artwork (profile deck). Rounded corners are baked into the PNG. */
+.imageCard {
+  width: 360px;
+  height: auto;
+  aspect-ratio: 1663 / 1031;
+  flex: 0 0 auto;
+  position: relative;
+  object-fit: contain;
+  user-select: none;
+  filter: drop-shadow(0 12px 40px rgba(18, 18, 18, 0.22));
+}
+
+.deck {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+/* Network 3-card view (desktop): feature the MIDDLE card — larger, lifted, and
+   overlapping its neighbors so the trio reads as one clustered deck and still
+   fits the hero's max width. Collapse the gap and pull the neighbors under the
+   middle via negative margins (360 + 360 + 420−2×72 = ~996px). The single-card
+   `profile` view has no middle child, so it's unaffected. */
+@media (min-width: 769px) {
+  .deck:has(> :nth-child(3)) {
+    gap: 0;
+  }
+
+  .deck > :nth-child(2):not(:last-child) {
+    width: 420px;
+    margin-inline: -72px;
+    z-index: 1;
+    filter: drop-shadow(0 20px 56px rgba(18, 18, 18, 0.28));
+  }
+
+  /* Solo `profile` card: enlarge so the single card carries the hero with the
+     same presence as the 3-up network view (otherwise it reads small alone).
+     540px → ~335px tall, kept under the viewport's 352px floor so swapping
+     to/from this term doesn't shift the layout. */
+  .deck > :only-child {
+    width: 540px;
+    filter: drop-shadow(0 20px 56px rgba(18, 18, 18, 0.28));
+  }
+}
+
+/* ≤768px: horizontally scrollable row with snap, edge-peeking the next card. */
+@media (max-width: 768px) {
+  .viewport {
+    min-height: 0;
+  }
+
+  .deck {
+    width: 100%;
+    min-width: 0;
+    justify-content: flex-start;
+    gap: 14px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    /* A scroll container clips overflow to its padding box on ALL sides, so the
+       padding must clear the card drop-shadow or it gets hard-clipped (boxy
+       shadows). The shadow below is trimmed to fit this padding; the scroll-edge
+       sides still soft-fade because each card carries its own shadow. */
+    padding: 30px 28px 42px;
+    scrollbar-width: none;
+  }
+
+  /* Lighter shadow on the scroll row so it fits inside the deck's clip padding
+     without a hard cut (the desktop 0 12 40 shadow needs ~52px below). */
+  .imageCard {
+    filter: drop-shadow(0 8px 22px rgba(18, 18, 18, 0.2));
+  }
+
+  .deck::-webkit-scrollbar {
+    display: none;
+  }
+
+  .deck > * {
+    scroll-snap-align: center;
+  }
+
+  /* Solo profile card: it's a single card, not a scroll row — centre it and let
+     its drop-shadow render in full (overflow: visible, no scroll/snap). This
+     also keeps the persistent centre card centred across profile↔network, so it
+     only resizes in place rather than travelling (a long layout morph left a
+     stray drop-shadow ghost to the side). */
+  .deck:not(:has(> :nth-child(2))) {
+    justify-content: center;
+    overflow: visible;
+    scroll-snap-type: none;
+    padding: 24px 20px 28px;
+  }
+}

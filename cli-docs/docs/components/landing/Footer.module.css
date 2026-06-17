@@ -1,0 +1,110 @@
+/* Footer (Figma 2093:183) — full-width black bar.
+   `overflow: hidden` clips the scroll-linked parallax rise of the inner content
+   so it never spawns a scrollbar or shifts layout (transforms don't affect flow,
+   but the transient overshoot is hidden). */
+.footer {
+  width: 100%;
+  overflow: hidden;
+  background-color: #121212;
+}
+
+/* Wraps the link columns + the wordmark row. Generous on top, snug on the
+   bottom so the wordmark row sits close to the browser edge. */
+.content {
+  width: 100%;
+  max-width: 1320px;
+  margin-inline: auto;
+  padding: clamp(56px, 9vh, 112px) clamp(20px, 5vw, 80px) clamp(32px, 5vh, 56px);
+}
+
+/* Link columns — docs + Zora ecosystem, mirroring the docs site this page
+   replaces. Whitespace alone separates them from the wordmark row below. */
+.columns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(48px, 8vw, 128px);
+  margin-bottom: clamp(48px, 9vh, 112px);
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.columnTitle {
+  font-family: var(--agents-mono);
+  font-size: 0.75rem;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #969696;
+}
+
+.columnLinks {
+  display: flex;
+  flex-direction: column;
+  /* Smaller row gap compensates for the taller link hit area below, so the
+     visual rhythm is unchanged while each link clears a 24px tap target. */
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 1rem;
+  line-height: 1.3;
+  text-decoration: none;
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--agents-green);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .link {
+    transition: color 150ms var(--ease-out-quad);
+  }
+
+  .link:hover {
+    color: #ffffff;
+  }
+}
+
+.inner {
+  display: flex;
+  flex-direction: row;
+  /* Sit the domain on the wordmark's BASELINE/bottom rather than centering it
+     against the tall logo (which left it floating mid-height). */
+  align-items: flex-end;
+  justify-content: space-between;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 24px;
+  }
+}
+
+.logo {
+  display: block;
+  height: clamp(40px, 6vw, 104px);
+  width: auto;
+}
+
+.domain {
+  color: #ffffff;
+  font-weight: 500;
+  font-size: clamp(1.5rem, 3vw, 2.75rem);
+  line-height: 1;
+  letter-spacing: -0.014em;
+}

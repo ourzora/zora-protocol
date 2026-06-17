@@ -1,13 +1,14 @@
 # Configuration
 
-The Zora CLI stores configuration in `~/.config/zora/` with two files:
+The Zora CLI stores configuration in `~/.config/zora/`:
 
-| File          | Contents                                                | Permissions |
-| ------------- | ------------------------------------------------------- | ----------- |
-| `config.json` | API key, anonymous analytics ID, DM-check timestamp     | `0600`      |
-| `wallet.json` | Private key (plain text), smart wallet & agent metadata | `0600`      |
+| File          | Contents                                                            | Permissions |
+| ------------- | ------------------------------------------------------------------- | ----------- |
+| `config.json` | API key, anonymous analytics ID, DM-check timestamp                 | `0600`      |
+| `wallet.json` | Private key (plain text), smart wallet & agent metadata             | `0600`      |
+| `budget.json` | Global [spending budget](/commands/agent#agent-budget) cap + ledger | `0600`      |
 
-The private key in `wallet.json` is stored in plain text — it is protected by file permissions (`0600`, owner read/write only), not encryption. Both files are versioned (`version: 1`) so the CLI can validate and migrate them.
+The private key in `wallet.json` is stored in plain text — it is protected by file permissions (`0600`, owner read/write only), not encryption. The files are versioned (`version: 1`) so the CLI can validate and migrate them. `budget.json` is created the first time you run `zora agent budget set`.
 
 On Windows, the config directory is `%APPDATA%\zora\` or `~\AppData\Roaming\zora\`.
 
