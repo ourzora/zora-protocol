@@ -17,6 +17,8 @@ export interface MessagingProfile {
   handle: string | null;
   displayName: string | null;
   avatarUrl: string | null;
+  /** True if this profile has been blocked by the platform (ToS violation, etc.). */
+  platformBlocked: boolean;
 }
 
 /** A single decrypted DM message. */

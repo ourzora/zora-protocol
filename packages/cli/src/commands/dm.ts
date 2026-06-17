@@ -3,7 +3,7 @@ import { isAddress, type Address } from "viem";
 import { getJson, outputData, outputErrorAndExit } from "../lib/output.js";
 import { getPrivateKey } from "../lib/config.js";
 import { normalizeKey } from "../lib/wallet.js";
-import { formatError } from "../lib/errors.js";
+import { formatError, bannedProfileMessage } from "../lib/errors.js";
 import { track } from "../lib/analytics.js";
 import { createSmartWalletAuth } from "../messaging/identity.js";
 import { createCliSmartWalletProvider } from "../messaging/cli-auth-provider.js";
@@ -350,6 +350,22 @@ dmCommand
   .action(async function (this: Command, address: string, message: string) {
     const json = getJson(this);
     const peer = await resolvePeer(json, address);
+
+    // Block interaction with platform-banned profiles
+    const profiles = await resolveProfiles([peer]);
+    const profile = profiles.get(peer);
+    if (profile?.platformBlocked) {
+      track("cli_dm_send", {
+        output_format: json ? "json" : "text",
+        success: false,
+        blocked_profile: true,
+      });
+      return outputErrorAndExit(
+        json,
+        bannedProfileMessage(profile.handle ?? peer),
+      );
+    }
+
     if (!message || !message.trim()) {
       return outputErrorAndExit(
         json,

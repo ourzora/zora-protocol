@@ -34,6 +34,7 @@ import {
   WETH_ADDRESS,
   type TradeTokenKey,
 } from "../lib/constants.js";
+import { bannedProfileMessage } from "../lib/errors.js";
 import { safeExit, SUCCESS } from "../lib/exit.js";
 import { formatAmountDisplay } from "../lib/format.js";
 import { gasErrorSuggestion } from "../lib/gas.js";
@@ -60,6 +61,7 @@ type ResolvedRecipient = {
   handle?: string;
   username?: string;
   displayName?: string;
+  platformBlocked?: boolean;
 };
 
 /**
@@ -111,6 +113,7 @@ async function resolveRecipient(
         profile?.displayName && !isPlaceholderName(profile.displayName)
           ? profile.displayName
           : undefined,
+      platformBlocked: profile?.platformBlocked ?? false,
     };
   } catch (err) {
     return isIdentifierAddress
@@ -270,6 +273,21 @@ export const sendCommand = new Command("send")
     }
 
     const resolvedRecipient = await resolveRecipient(opts.to, json);
+
+    // Block interaction with platform-banned profiles
+    if (resolvedRecipient.platformBlocked) {
+      track("cli_send", {
+        output_format: json ? "json" : "text",
+        success: false,
+        blocked_profile: true,
+      });
+      return outputErrorAndExit(
+        json,
+        bannedProfileMessage(
+          resolvedRecipient.handle ?? resolvedRecipient.address,
+        ),
+      );
+    }
 
     const amountMode = getAmountMode(
       json,

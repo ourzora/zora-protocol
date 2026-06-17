@@ -237,6 +237,10 @@ export function bannedCoinBuyMessage(address: string): string {
   return `Unable to buy ${address} because it violates the Zora terms of service. Already own this coin? Run zora sell ${address} --all to exit your position.`;
 }
 
+export function bannedProfileMessage(identifier: string): string {
+  return `This account (${identifier}) has been blocked for violating the Zora terms of service.`;
+}
+
 /**
  * Filesystem error boundary for auth, setup, config.
  * Gives actionable messages for permission/path issues.

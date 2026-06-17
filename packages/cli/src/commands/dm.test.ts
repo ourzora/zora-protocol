@@ -52,6 +52,7 @@ vi.mock("../messaging/uapi.js", () => ({
         handle: "alice",
         displayName: "alice",
         avatarUrl: null,
+        platformBlocked: false,
       });
     return m;
   }),
@@ -71,6 +72,7 @@ import { createMessagingClient } from "../messaging/client.js";
 import {
   checkNewDmConversationAllowed,
   resolveHandleToAddress,
+  resolveProfiles,
 } from "../messaging/uapi.js";
 import { getPrivateKey } from "../lib/config.js";
 import { createCliSmartWalletProvider } from "../messaging/cli-auth-provider.js";
@@ -292,5 +294,27 @@ describe("dm command", () => {
     await expect(run(["send", PEER, "   "])).rejects.toThrow("process.exit(1)");
     const out = jsonOut();
     expect(out.error).toContain("required");
+  });
+
+  it("send blocks interaction with platform-banned profiles", async () => {
+    vi.mocked(resolveProfiles).mockResolvedValueOnce(
+      new Map([
+        [
+          PEER as Address,
+          {
+            address: PEER as Address,
+            handle: "banned-user",
+            displayName: "Banned User",
+            avatarUrl: null,
+            platformBlocked: true,
+          },
+        ],
+      ]),
+    );
+    await expect(run(["send", PEER, "hello"])).rejects.toThrow("process.exit(1)");
+    const out = jsonOut();
+    expect(out.error).toContain("blocked");
+    expect(out.error).toContain("terms of service");
+    expect(fakeClient.sendText).not.toHaveBeenCalled();
   });
 });

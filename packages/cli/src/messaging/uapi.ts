@@ -73,6 +73,7 @@ interface ProfileApiResponse {
     handle?: string | null;
     username?: string | null;
     displayName?: string | null;
+    platformBlocked?: boolean | null;
     avatar?: { previewImage?: { small?: string | null } | null } | null;
     linkedWallets?: {
       edges?: Array<{
@@ -150,9 +151,16 @@ const fetchProfile = async (address: Address): Promise<MessagingProfile> => {
       handle,
       displayName: profile?.displayName ?? handle,
       avatarUrl: profile?.avatar?.previewImage?.small ?? null,
+      platformBlocked: profile?.platformBlocked ?? false,
     };
   } catch {
-    return { address, handle: null, displayName: null, avatarUrl: null };
+    return {
+      address,
+      handle: null,
+      displayName: null,
+      avatarUrl: null,
+      platformBlocked: false,
+    };
   }
 };
 
@@ -183,6 +191,7 @@ export const resolveProfiles = async (
         handle: cached.handle,
         displayName: cached.displayName,
         avatarUrl: cached.avatarUrl,
+        platformBlocked: cached.platformBlocked ?? false,
       });
     } else {
       stale.push(address);
@@ -210,6 +219,7 @@ export const resolveProfiles = async (
           handle: profile.handle,
           displayName: profile.displayName,
           avatarUrl: profile.avatarUrl,
+          platformBlocked: profile.platformBlocked,
           fetchedAt: now,
         };
       }
