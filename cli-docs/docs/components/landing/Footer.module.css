@@ -17,48 +17,49 @@
   padding: clamp(56px, 9vh, 112px) clamp(20px, 5vw, 80px) clamp(32px, 5vh, 56px);
 }
 
-/* Link columns — docs + Zora ecosystem, mirroring the docs site this page
-   replaces. Whitespace alone separates them from the wordmark row below. */
+/* Three header-less link columns on a grid — grouped to the left and aligned to
+   the page content, with a generous gap below before the wordmark row. */
 .columns {
-  display: flex;
-  flex-wrap: wrap;
-  gap: clamp(48px, 8vw, 128px);
-  margin-bottom: clamp(48px, 9vh, 112px);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(32px, 5vw, 72px);
+  max-width: 920px;
+  margin-bottom: clamp(96px, 16vh, 200px);
 }
 
+/* Each column is a link list. */
 .column {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-}
-
-.columnTitle {
-  font-family: var(--agents-mono);
-  font-size: 0.75rem;
-  line-height: 1;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #969696;
-}
-
-.columnLinks {
-  display: flex;
-  flex-direction: column;
-  /* Smaller row gap compensates for the taller link hit area below, so the
-     visual rhythm is unchanged while each link clears a 24px tap target. */
-  gap: 7px;
+  gap: 0;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
+@media (max-width: 680px) {
+  .columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 32px;
+  }
+}
+
+@media (max-width: 400px) {
+  .columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .link {
   display: inline-flex;
   align-items: center;
-  min-height: 24px;
-  color: rgba(255, 255, 255, 0.72);
+  /* Tight stack to match the design — vertical padding keeps a usable tap
+     target without the loose 44px-row gaps. */
+  padding-block: 6px;
+  color: rgba(255, 255, 255, 0.9);
   font-size: 1rem;
   line-height: 1.3;
+  letter-spacing: -0.01em;
   text-decoration: none;
 }
 
@@ -97,8 +98,9 @@
 
 .logo {
   display: block;
-  height: clamp(40px, 6vw, 104px);
-  width: auto;
+  width: clamp(168px, 24vw, 360px);
+  height: auto;
+  color: #ffffff;
 }
 
 .domain {

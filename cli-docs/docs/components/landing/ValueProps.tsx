@@ -1,11 +1,12 @@
-import { VALUE_PROPS } from "./data";
-import { RevealGroup, RevealItem } from "./Reveal";
-import styles from "./ValueProps.module.css";
+import { VALUE_PROPS } from './data'
+import { RevealGroup, RevealItem } from './Reveal'
+
+import styles from './ValueProps.module.css'
 
 /**
- * Value-prop grid on a white background. A centered 2×2 grid of {title, body},
- * each cell centered, that collapses to a single column on narrow viewports.
- * Static — no scroll animation.
+ * Value-prop grid on a white background (Figma 2093:166). A centered 2×2 grid
+ * of {title, body}, each cell centered, that collapses to a single column on
+ * narrow viewports. Static — no scroll animation.
  */
 export function ValueProps() {
   return (
@@ -26,5 +27,5 @@ export function ValueProps() {
         ))}
       </RevealGroup>
     </section>
-  );
+  )
 }

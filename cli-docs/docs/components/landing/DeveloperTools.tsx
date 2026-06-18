@@ -1,20 +1,20 @@
-import { motion, useReducedMotion } from "motion/react";
+import { motion, useReducedMotion } from 'motion/react'
 
-import { DEV_TOOLS } from "./data";
-import { Icon, type IconName } from "./Icon";
-import { Reveal, RevealGroup, RevealItem } from "./Reveal";
-import { useCopyToClipboard } from "./lib/useCopyToClipboard";
-import styles from "./DeveloperTools.module.css";
+import { DEV_TOOLS } from './data'
+import { Icon, type IconName } from './Icon'
+import { Reveal, RevealGroup, RevealItem } from './Reveal'
+import { useCopyToClipboard } from './lib/useCopyToClipboard'
+import styles from './DeveloperTools.module.css'
 
 /** Pick the column glyph by tool label, defaulting to the code icon. */
-function iconFor(label: string): Extract<IconName, "code" | "sparkle"> {
-  return label.toLowerCase() === "skill" ? "sparkle" : "code";
+function iconFor(label: string): Extract<IconName, 'code' | 'skill'> {
+  return label.toLowerCase() === 'skill' ? 'skill' : 'code'
 }
 
 interface CopyableSnippetProps {
-  snippet: string;
+  snippet: string
   /** Used for the copy button's accessible label, e.g. "CLI". */
-  label: string;
+  label: string
 }
 
 /* Copy-glyph geometry lifted from the library's IconSquareBehindSquare1
@@ -24,20 +24,15 @@ interface CopyableSnippetProps {
    square and fades while the front square grows to a centered 17.5×17.5 with
    its corner radius animating to half its size — which IS the square→circle
    morph, no path interpolation needed. */
-const BACK_D = "M15.25 8.75V2.75H2.75V15.25H8.75";
-const FRONT_REST = { x: 8.75, y: 8.75, width: 12.5, height: 12.5, rx: 0 };
-const FRONT_CIRCLE = { x: 3.25, y: 3.25, width: 17.5, height: 17.5, rx: 8.75 };
-const BACK_REST = { x: 0, y: 0, opacity: 1 };
-const BACK_MERGED = { x: 6, y: 6, opacity: 0 };
+const BACK_D = 'M15.25 8.75V2.75H2.75V15.25H8.75'
+const FRONT_REST = { x: 8.75, y: 8.75, width: 12.5, height: 12.5, rx: 0 }
+const FRONT_CIRCLE = { x: 3.25, y: 3.25, width: 17.5, height: 17.5, rx: 8.75 }
+const BACK_REST = { x: 0, y: 0, opacity: 1 }
+const BACK_MERGED = { x: 6, y: 6, opacity: 0 }
 
 /** SwiftUI-style springs, same family as the hero DM panel. */
-const MORPH_SPRING = { type: "spring", duration: 0.3, bounce: 0.2 } as const;
-const DRAW_SPRING = {
-  type: "spring",
-  duration: 0.25,
-  bounce: 0.15,
-  delay: 0.12,
-} as const;
+const MORPH_SPRING = { type: 'spring', duration: 0.3, bounce: 0.2 } as const
+const DRAW_SPRING = { type: 'spring', duration: 0.25, bounce: 0.15, delay: 0.12 } as const
 
 /**
  * The copy→check morph from the reference interaction: the copy icon's two
@@ -48,9 +43,9 @@ const DRAW_SPRING = {
  * (check included) tracks the affordance color.
  */
 function CopyMorphIcon({ copied }: { copied: boolean }) {
-  const reduceMotion = useReducedMotion();
-  const morph = reduceMotion ? { duration: 0 } : MORPH_SPRING;
-  const draw = reduceMotion ? { duration: 0 } : DRAW_SPRING;
+  const reduceMotion = useReducedMotion()
+  const morph = reduceMotion ? { duration: 0 } : MORPH_SPRING
+  const draw = reduceMotion ? { duration: 0 } : DRAW_SPRING
 
   return (
     <svg
@@ -81,7 +76,7 @@ function CopyMorphIcon({ copied }: { copied: boolean }) {
         transition={copied ? draw : morph}
       />
     </svg>
-  );
+  )
 }
 
 /**
@@ -91,7 +86,7 @@ function CopyMorphIcon({ copied }: { copied: boolean }) {
  * success (see `CopyMorphIcon`).
  */
 function CopyableSnippet({ snippet, label }: CopyableSnippetProps) {
-  const { copied, copy } = useCopyToClipboard();
+  const { copied, copy } = useCopyToClipboard()
 
   return (
     <button
@@ -109,11 +104,11 @@ function CopyableSnippet({ snippet, label }: CopyableSnippetProps) {
         <CopyMorphIcon copied={copied} />
       </span>
     </button>
-  );
+  )
 }
 
 /**
- * "Developer Tools" section.
+ * "Developer Tools" section (Figma nodes 2093:165 / 2093:205 / 2093:196).
  *
  * A centered display heading over two columns (CLI + Skill). Each column is a
  * centered vertical stack — icon, title, description, and a copyable command
@@ -130,28 +125,23 @@ export function DeveloperTools() {
 
       <RevealGroup className={styles.grid}>
         {DEV_TOOLS.map((tool) => {
-          const icon = iconFor(tool.label);
+          const icon = iconFor(tool.label)
           return (
             <RevealItem key={tool.label} className={styles.cell}>
               <article className={styles.column}>
                 <div className={styles.text}>
                   <div className={styles.titleRow}>
-                    <Icon name={icon} className={styles.icon} size={32} />
-                    <h3 className={`agentsTitle ${styles.title}`}>
-                      {tool.label}
-                    </h3>
+                    <Icon name={icon} className={styles.icon} size={52} />
+                    <h3 className={`agentsTitle ${styles.title}`}>{tool.label}</h3>
                   </div>
                   <p className={`agentsBody ${styles.body}`}>{tool.body}</p>
                 </div>
                 <CopyableSnippet snippet={tool.snippet} label={tool.label} />
-                <a href={tool.href} className={styles.docsLink}>
-                  {tool.linkLabel} ↗
-                </a>
               </article>
             </RevealItem>
-          );
+          )
         })}
       </RevealGroup>
     </section>
-  );
+  )
 }

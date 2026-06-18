@@ -1,4 +1,7 @@
 import { defineConfig } from "vocs";
+import { Fragment, createElement } from "react";
+
+const OG_IMAGE = "/og.png";
 
 const zoraLight = {
   name: "zora-light",
@@ -152,11 +155,20 @@ export default defineConfig({
       include: ["motion", "motion/react", "@number-flow/react"],
     },
   },
-  title: "Zora CLI",
-  titleTemplate: "%s — Zora CLI",
+  title: "Agents on Zora",
+  titleTemplate: "%s — Agents on Zora",
   logoUrl: "/zorb.svg",
   iconUrl: "/zorb.svg",
-  description: "Build an AI Agent. Trade Coins.",
+  description:
+    "One prompt to set up your agent with a profile, wallet, and social network.",
+  ogImageUrl: { "/": OG_IMAGE },
+  head: () =>
+    createElement(
+      Fragment,
+      null,
+      createElement("meta", { property: "og:image:width", content: "2400" }),
+      createElement("meta", { property: "og:image:height", content: "1280" }),
+    ),
   markdown: {
     code: {
       themes: {

@@ -4,8 +4,8 @@
      exiting stage out of flow; this min-height holds the cell. Tunable. */
   display: grid;
   /* Explicit single column so the track is bounded by the container width and
-     never grows to the content's max-content (the 3-card row ~1000px) — that
-     blowout is what let the deck escape the viewport on mobile. */
+     never grows to the content's max-content — that blowout is what let the
+     deck escape the viewport on mobile. */
   grid-template-columns: minmax(0, 1fr);
   width: 100%;
   max-width: 1000px;
@@ -26,97 +26,90 @@
   will-change: transform;
 }
 
-/* Finished card artwork (profile deck). Rounded corners are baked into the PNG. */
-.imageCard {
-  width: 360px;
-  height: auto;
-  aspect-ratio: 1663 / 1031;
-  flex: 0 0 auto;
+/* Desktop: every card shares ONE centred grid cell and is offset/scaled purely
+   with `motion` transforms. No flex reflow, no FLIP — so the centre card holds
+   its position while the side cards fan in. */
+.stack {
   position: relative;
-  object-fit: contain;
-  user-select: none;
-  filter: drop-shadow(0 12px 40px rgba(18, 18, 18, 0.22));
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  place-items: center;
+  width: 100%;
+  height: 340px;
 }
 
-.deck {
-  display: flex;
-  justify-content: center;
-  gap: 20px;
+.stackCard {
+  grid-area: 1 / 1;
+  width: 486px;
+  height: 282px;
+  /* Scale + translate animate about the card's centre (motion default), so the
+     centre card never drifts and the side cards grow out from behind it. */
+  will-change: transform;
 }
 
-/* Network 3-card view (desktop): feature the MIDDLE card — larger, lifted, and
-   overlapping its neighbors so the trio reads as one clustered deck and still
-   fits the hero's max width. Collapse the gap and pull the neighbors under the
-   middle via negative margins (360 + 360 + 420−2×72 = ~996px). The single-card
-   `profile` view has no middle child, so it's unaffected. */
-@media (min-width: 769px) {
-  .deck:has(> :nth-child(3)) {
-    gap: 0;
-  }
-
-  .deck > :nth-child(2):not(:last-child) {
-    width: 420px;
-    margin-inline: -72px;
-    z-index: 1;
-    filter: drop-shadow(0 20px 56px rgba(18, 18, 18, 0.28));
-  }
-
-  /* Solo `profile` card: enlarge so the single card carries the hero with the
-     same presence as the 3-up network view (otherwise it reads small alone).
-     540px → ~335px tall, kept under the viewport's 352px floor so swapping
-     to/from this term doesn't shift the layout. */
-  .deck > :only-child {
-    width: 540px;
-    filter: drop-shadow(0 20px 56px rgba(18, 18, 18, 0.28));
-  }
+/* ≤768px: a compact, centred card stage — NOT a horizontal scroll row. The card
+   scales fluidly to the phone (no fixed pixel width, nothing to scroll). The
+   "profile" view shows one card; "network" tucks two flanking cards behind it as
+   a tight peek. Card layers stack at one origin and are offset/scaled by motion. */
+.mobileStack {
+  position: relative;
+  /* Fluid card width — always fits the phone inside the hero's 20px gutters. */
+  --card-w: min(360px, calc(100vw - 40px));
+  width: var(--card-w);
+  /* The 486×282 card aspect ratio at the fluid width. */
+  height: calc(var(--card-w) * 282 / 486);
+  margin-inline: auto;
+  /* Both decks render so SSR == first paint (no useMediaQuery flip on
+     hydration); CSS reveals exactly one. Mobile deck hidden by default. */
+  display: none;
 }
 
-/* ≤768px: horizontally scrollable row with snap, edge-peeking the next card. */
+/* Each card layer fills the stack and shares one origin so they overlap in place
+   (like the desktop grid cell); motion offsets/scales each layer for the peek. */
+.mobileLayer {
+  position: absolute;
+  inset: 0;
+  width: var(--card-w);
+  height: calc(var(--card-w) * 282 / 486);
+}
+
+/* Shrinks the fixed 486×282 ProfileCard down to the fluid width. A scale
+   transform doesn't shrink the layout box, so the explicit .mobileLayer
+   dimensions above bound the cell; the top-left origin aligns the scaled art. */
+.mobileScaler {
+  width: 486px;
+  height: 282px;
+  /* Fixed fallback for engines without calc() length division; the fluid rule
+     below wins where supported (Chrome 116+ / Safari 17.4+). Dividing by 486px
+     (a length) — not 486 — yields the unitless number scale() requires. */
+  transform: scale(0.66);
+  transform: scale(calc(var(--card-w) / 486px));
+  transform-origin: top left;
+}
+
 @media (max-width: 768px) {
   .viewport {
-    min-height: 0;
+    /* Reserve the tallest mobile stage (the DM panel) so swapping
+       card ↔ DM ↔ wallet never shifts the CTA below. Tuned to the rendered DM
+       panel height after the wider panel let the reply wrap shorter (~287px at
+       ≥360px). The base `align-items: center` keeps shorter stages balanced. */
+    min-height: 290px;
   }
 
-  .deck {
-    width: 100%;
-    min-width: 0;
-    justify-content: flex-start;
-    gap: 14px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-    /* A scroll container clips overflow to its padding box on ALL sides, so the
-       padding must clear the card drop-shadow or it gets hard-clipped (boxy
-       shadows). The shadow below is trimmed to fit this padding; the scroll-edge
-       sides still soft-fade because each card carries its own shadow. */
-    padding: 30px 28px 42px;
-    scrollbar-width: none;
-  }
-
-  /* Lighter shadow on the scroll row so it fits inside the deck's clip padding
-     without a hard cut (the desktop 0 12 40 shadow needs ~52px below). */
-  .imageCard {
-    filter: drop-shadow(0 8px 22px rgba(18, 18, 18, 0.2));
-  }
-
-  .deck::-webkit-scrollbar {
+  /* Swap decks at the phone breakpoint (matches the old JS `min-width: 769px`). */
+  .stack {
     display: none;
   }
 
-  .deck > * {
-    scroll-snap-align: center;
+  .mobileStack {
+    display: block;
   }
+}
 
-  /* Solo profile card: it's a single card, not a scroll row — centre it and let
-     its drop-shadow render in full (overflow: visible, no scroll/snap). This
-     also keeps the persistent centre card centred across profile↔network, so it
-     only resizes in place rather than travelling (a long layout morph left a
-     stray drop-shadow ghost to the side). */
-  .deck:not(:has(> :nth-child(2))) {
-    justify-content: center;
-    overflow: visible;
-    scroll-snap-type: none;
-    padding: 24px 20px 28px;
+/* Very small phones (<360px): the narrower DM panel wraps its reply onto more
+   lines, so reserve a touch more to keep the CTA from shifting when DMs land. */
+@media (max-width: 359.98px) {
+  .viewport {
+    min-height: 310px;
   }
 }

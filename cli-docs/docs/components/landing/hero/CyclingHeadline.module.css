@@ -7,9 +7,9 @@
   letter-spacing: -0.04em;
   /* Monument stylistic sets used across the brand mark. */
   font-feature-settings:
-    "ss11" 1,
-    "ss05" 1,
-    "calt" 0;
+    'ss11' 1,
+    'ss05' 1,
+    'calt' 0;
   color: var(--agents-ink);
   text-align: center;
   margin: 0;
@@ -79,6 +79,10 @@
   background-color: var(--agents-green);
 }
 
+.mobileVisual {
+  display: none;
+}
+
 .srOnly {
   position: absolute;
   width: 1px;
@@ -89,4 +93,57 @@
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+@media (max-width: 768px) {
+  .headline {
+    width: 100%;
+    /* Two lines on mobile ("Your agent's" over the cycling word) so the word
+       runs much larger + more prominent than a single line would allow. */
+    font-size: clamp(2.2rem, 12vw, 3.3rem);
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+  }
+
+  .visual {
+    display: none;
+  }
+
+  /* Stack the prefix over the cycling word, both centred. */
+  .mobileVisual {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.08em;
+    width: 100%;
+    max-width: 100%;
+    /* Keep each line on one row; the clamp keeps the longer prefix in bounds. */
+    white-space: nowrap;
+  }
+
+  /* Line 2 — reserves one line-box so the column never jumps as the word swaps;
+     the word is absolutely centred inside it so out/incoming can cross-fade
+     over each other with no reflow. */
+  .mobileSlot {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 1.12em;
+  }
+
+  /* The cycling word + its green marker, centred on its own line. width:
+     fit-content keeps the green box hugging the word; margin-inline: auto
+     centres the absolutely-positioned box within the full-width slot. */
+  .mobileTerm {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: fit-content;
+    margin-inline: auto;
+    padding: 0 0.1em;
+    background: var(--agents-green);
+    color: var(--agents-ink);
+    will-change: opacity;
+  }
 }

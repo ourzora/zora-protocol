@@ -1,21 +1,18 @@
 import { homedir, platform } from "node:os";
 import { join } from "node:path";
 import { mkdirSync } from "node:fs";
-import {
-  Client,
+import type {
   ConsentState,
-  IdentifierKind,
-  LogLevel,
-  isText,
-  type Dm,
-  type DecodedMessage,
-  type Identifier,
-  type Signer,
-  type XmtpEnv,
+  Dm,
+  DecodedMessage,
+  Identifier,
+  Signer,
+  XmtpEnv,
 } from "@xmtp/node-sdk";
 import { ReactionCodec } from "@xmtp/content-type-reaction";
 import { ReadReceiptCodec } from "@xmtp/content-type-read-receipt";
 import { getAddress, type Address } from "viem";
+import { loadXmtpSdk } from "./load-xmtp-sdk.js";
 import type { XmtpSignerSpec } from "./identity.js";
 import type {
   DmConsent,
@@ -30,24 +27,13 @@ import type {
  * `MessagingClient` interface, so the rest of the feature — and its tests — does
  * not load the native binding. This adapter maps node-sdk `Dm`/`DecodedMessage`
  * into the plain shapes in `types.ts`.
+ *
+ * The SDK is loaded at runtime via {@link loadXmtpSdk} so the right native
+ * binding is picked for this platform's libc (see load-xmtp-sdk.ts). Only types
+ * are imported statically here — those are erased at build time and never touch
+ * the binding. The enum-backed helpers therefore live inside
+ * {@link createMessagingClient}, where the runtime SDK is available.
  */
-
-const CONSENT_TO_SDK: Record<DmConsent, ConsentState> = {
-  allowed: ConsentState.Allowed,
-  unknown: ConsentState.Unknown,
-  denied: ConsentState.Denied,
-};
-
-const consentFromSdk = (state: ConsentState): DmConsent => {
-  if (state === ConsentState.Allowed) return "allowed";
-  if (state === ConsentState.Denied) return "denied";
-  return "unknown";
-};
-
-const toIdentifier = (address: Address): Identifier => ({
-  identifier: address.toLowerCase(),
-  identifierKind: IdentifierKind.Ethereum,
-});
 
 const formatContentType = (ct: {
   authorityId: string;
@@ -81,20 +67,6 @@ const defaultDbPath = (env: XmtpEnv, inboxId: string): string => {
   return join(dir, `xmtp-${env}-${inboxId}.db3`);
 };
 
-/** Turns the node-sdk-free signer spec into a concrete XMTP `Signer`. */
-export const buildXmtpSigner = (spec: XmtpSignerSpec): Signer => {
-  const getIdentifier = () => toIdentifier(spec.address);
-  if (spec.type === "EOA") {
-    return { type: "EOA", getIdentifier, signMessage: spec.signMessage };
-  }
-  return {
-    type: "SCW",
-    getIdentifier,
-    getChainId: () => BigInt(spec.chainId),
-    signMessage: spec.signMessage,
-  };
-};
-
 export interface CreateMessagingClientOptions {
   env?: XmtpEnv;
   /** 32-byte hex/bytes key encrypting the local DB at rest. */
@@ -118,6 +90,41 @@ export const createMessagingClient = async (
   spec: XmtpSignerSpec,
   options: CreateMessagingClientOptions = {},
 ): Promise<MessagingClient> => {
+  // Load the SDK whose native binding can load on this platform's libc. This is
+  // the call that actually pulls in the native binding, so a glibc-too-old /
+  // missing-binary failure surfaces here and is caught by the dm command.
+  const { Client, ConsentState, IdentifierKind, LogLevel, isText } =
+    await loadXmtpSdk();
+
+  // Enum-backed helpers — defined here because the enums are runtime values from
+  // the dynamically loaded SDK (only their types are imported statically above).
+  const consentToSdk: Record<DmConsent, ConsentState> = {
+    allowed: ConsentState.Allowed,
+    unknown: ConsentState.Unknown,
+    denied: ConsentState.Denied,
+  };
+  const consentFromSdk = (state: ConsentState): DmConsent => {
+    if (state === ConsentState.Allowed) return "allowed";
+    if (state === ConsentState.Denied) return "denied";
+    return "unknown";
+  };
+  const toIdentifier = (address: Address): Identifier => ({
+    identifier: address.toLowerCase(),
+    identifierKind: IdentifierKind.Ethereum,
+  });
+  const buildXmtpSigner = (s: XmtpSignerSpec): Signer => {
+    const getIdentifier = () => toIdentifier(s.address);
+    if (s.type === "EOA") {
+      return { type: "EOA", getIdentifier, signMessage: s.signMessage };
+    }
+    return {
+      type: "SCW",
+      getIdentifier,
+      getChainId: () => BigInt(s.chainId),
+      signMessage: s.signMessage,
+    };
+  };
+
   const env: XmtpEnv = options.env ?? "production";
   const signer = buildXmtpSigner(spec);
 
@@ -182,13 +189,13 @@ export const createMessagingClient = async (
     address,
 
     async sync(consent?: DmConsent[]): Promise<void> {
-      const states = consent?.map((c) => CONSENT_TO_SDK[c]);
+      const states = consent?.map((c) => consentToSdk[c]);
       await client.conversations.syncAll(states);
       await client.conversations.sync();
     },
 
     async listDms(consent?: DmConsent[]): Promise<DmSummary[]> {
-      const states = consent?.map((c) => CONSENT_TO_SDK[c]);
+      const states = consent?.map((c) => consentToSdk[c]);
       const dms = client.conversations.listDms({ consentStates: states });
       return Promise.all(
         dms.map(async (dm): Promise<DmSummary> => {
@@ -249,7 +256,7 @@ export const createMessagingClient = async (
       }
       // Must await: updateConsentState writes to SQLite via the native binding,
       // and the short-lived CLI exits right after, abandoning an un-awaited write.
-      await dm.updateConsentState(CONSENT_TO_SDK[consent]);
+      await dm.updateConsentState(consentToSdk[consent]);
     },
 
     streamAllMessages(): AsyncIterable<

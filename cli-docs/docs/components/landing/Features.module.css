@@ -1,8 +1,8 @@
 /* Features (Figma 2093:215): a row of four equal columns on a white page.
-   Each column is a left-aligned editorial lockup — a hairline icon chip anchors
-   a tight title + body pair. Treated as a transparent "card" (no fill): the chip
-   is the only added chrome. The two-line title reservation keeps chip-tops,
-   title-starts, and body-starts aligned across the row at multi-column widths. */
+   Each column is a centered editorial lockup — a hairline icon glyph centered
+   over a tight title + body pair. Treated as a transparent "card" (no fill):
+   the glyph is the only added chrome. Grid `align-items: start` keeps the
+   icon-tops aligned across the row at multi-column widths. */
 .section {
   display: flex;
   justify-content: center;
@@ -20,21 +20,21 @@
   max-width: 1320px;
 }
 
-/* Left-aligned lockup: chip → text. The column gap sets the chip→text rhythm. */
+/* Centered lockup: icon → text. The column gap sets the icon→text rhythm. */
 .column {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   min-width: 0;
-  gap: 20px;
-  text-align: left;
+  gap: 12px;
+  text-align: center;
 }
 
 /* Bare icon glyph — the column's anchor (no frame). */
 .icon {
   display: block;
-  width: 44px;
-  height: 44px;
+  width: 52px;
+  height: 52px;
   flex-shrink: 0;
   color: var(--agents-ink);
 }
@@ -43,7 +43,7 @@
 .text {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   min-width: 0;
   gap: 10px;
 }
@@ -53,16 +53,16 @@
   font-size: clamp(1.5rem, 2.1vw, 2rem);
   line-height: 1.04;
   letter-spacing: -0.01em;
-  text-align: left;
+  text-align: center;
 }
 
 .body {
   max-width: min(34ch, 100%);
   font-size: clamp(1rem, 1.15vw, 1.125rem);
-  line-height: 1.3;
+  line-height: 1.12;
   letter-spacing: 0;
   color: rgba(18, 18, 18, 0.68);
-  text-align: left;
+  text-align: center;
 }
 
 /* 2 columns on tablet */
@@ -81,7 +81,7 @@
   }
 
   .icon {
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
   }
 }

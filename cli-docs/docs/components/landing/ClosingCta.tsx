@@ -1,12 +1,14 @@
 import { motion, useAnimationControls, useReducedMotion } from "motion/react";
 
-import { CLOSING } from "./data";
+import { CLOSING, SETUP_FALLBACK_HREF, SETUP_PROMPT } from "./data";
 import { RevealGroup, RevealItem } from "./Reveal";
+import { useCopyToClipboard } from "./lib/useCopyToClipboard";
 import { useHoverCapable } from "./lib/useHoverCapable";
 import styles from "./ClosingCta.module.css";
 
 /**
- * Closing call-to-action section.
+ * Closing call-to-action section for the agents.zora.com landing page
+ * (Figma node 2093:148).
  *
  * White, centered. A decorative "AGENT" lockup — the gray glyph mark followed
  * by a bordered pill reading AGENT — sits up top, then the display headline, a
@@ -17,13 +19,27 @@ export function ClosingCta() {
   const reduceMotion = useReducedMotion();
   const hoverable = useHoverCapable();
   const glyphWiggle = useAnimationControls();
+  const secondaryHref = CLOSING.secondaryCta.href;
+  const secondaryIsExternal = /^https?:\/\//.test(secondaryHref);
+  // Primary CTA copies the setup prompt — same action as the hero's top CTA.
+  const { copied, copy } = useCopyToClipboard();
 
-  // Fire a one-shot "reaction" wiggle on hover-enter (cartoon head-tilt).
-  // Triggered imperatively rather than via whileHover so the keyframe sequence
-  // always plays through to rest (rotate: 0) — a quick pointer flick can't
-  // strand the head at a tilt. The leading `null` keyframe means a re-trigger
-  // animates from the CURRENT angle, so rapid re-hovers are smoothly
-  // interruptible (no snap-to-0). On-screen movement → ease-in-out.
+  // Same fallback as the hero CTA: if the clipboard isn't available, send the
+  // user to the skill docs page so the setup instructions are still reachable.
+  const copyOrFallback = () => {
+    void copy(SETUP_PROMPT).then((ok) => {
+      if (!ok && typeof window !== "undefined") {
+        window.location.href = SETUP_FALLBACK_HREF;
+      }
+    });
+  };
+
+  // Fire a one-shot "reaction" wiggle on hover-enter (cartoon head-tilt, per
+  // /emil-design-engineering). Triggered imperatively rather than via whileHover
+  // so the keyframe sequence always plays through to rest (rotate: 0) — a quick
+  // pointer flick can't strand the head at a tilt. The leading `null` keyframe
+  // means a re-trigger animates from the CURRENT angle, so rapid re-hovers are
+  // smoothly interruptible (no snap-to-0). On-screen movement → ease-in-out.
   const playGlyphWiggle = () => {
     if (reduceMotion || !hoverable) return;
     void glyphWiggle.start(
@@ -77,15 +93,33 @@ export function ClosingCta() {
 
         <RevealItem>
           <div className={styles.actions}>
-            <motion.a
-              href={CLOSING.primaryCta.href}
+            <motion.button
+              type="button"
+              onClick={copyOrFallback}
+              data-copied={copied}
               className={`${styles.cta} ${styles.ctaPrimary}`}
+              aria-label={
+                copied
+                  ? "Setup prompt copied to clipboard"
+                  : `Copy setup prompt: ${SETUP_PROMPT}`
+              }
               {...ctaMotion}
             >
-              {CLOSING.primaryCta.label}
-            </motion.a>
+              {/* Width reserved by the wider label so the pill never resizes. */}
+              <span className={styles.labelSlot}>
+                <span className={styles.labelSizer} aria-hidden="true">
+                  {CLOSING.primaryCta.label}
+                </span>
+                <span className={styles.label}>
+                  {copied ? "Copied" : CLOSING.primaryCta.label}
+                </span>
+              </span>
+            </motion.button>
             <motion.a
-              href={CLOSING.secondaryCta.href}
+              href={secondaryHref}
+              {...(secondaryIsExternal
+                ? { target: "_blank", rel: "noopener noreferrer" }
+                : {})}
               className={`${styles.cta} ${styles.ctaSecondary}`}
               {...ctaMotion}
             >

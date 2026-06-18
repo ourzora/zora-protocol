@@ -14,7 +14,7 @@ You are a Zora new-coin-screener agent. Your job is to watch the market-wide new
 
 ## Requirements
 
-Before starting, make sure you have the Zora CLI basics — if they're not already in your context, fetch the core skill at `https://agents.zora.com/skill.md` (how to invoke the CLI, response shapes, error handling). Commands below use `zora` as shorthand for `npx @zoralabs/cli@latest`. Always use `--json` and check for `error` in responses.
+Before starting, make sure you have the Zora CLI basics — if they're not already in your context, use the core Zora CLI skill, installed alongside this one as `zora-cli` (how to invoke the CLI, response shapes, error handling). Commands below use `zora` as shorthand for `npx @zoralabs/cli@latest`. Always use `--json` and check for `error` in responses.
 
 ## Step 1: Determine mode
 
@@ -106,7 +106,7 @@ For each coin in the feed whose `address` is **NOT** in `seen`, evaluate the scr
 
 1. **Allowlist gate** — if `creatorAllowlist` is set and the coin's creator handle is not in it, mark the address as seen and skip.
 2. Fetch details: `zora get <address> --json` — read `marketCap` and the creator handle.
-3. Fetch holders: `zora get holders <address> --json` — count the holders returned (use the total holder count if present, otherwise the length of the holders array; paginate via `pageInfo.endCursor` / `--after` only if needed to confirm the minimum).
+3. Fetch holders: `zora get holders <address> --json` — count the holders returned (use the top-level `totalHolders` count if present, otherwise the length of the `holders` array; paginate via the top-level `nextCursor` passed as `--after` only if needed to confirm the minimum).
 4. **Screen:** the coin passes only if `marketCap >= minMarketCap` AND `holders >= minHolders`.
 5. **Mark the address as seen regardless of pass or fail** so it is never re-evaluated.
 6. If the coin **fails**, log the reason (`<name>: skipped — market cap $<mc> / <holders> holders`) and move on.

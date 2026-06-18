@@ -16,7 +16,7 @@ The skill runs **one iteration per invocation**. On the first run, it collects c
 
 ## Requirements
 
-Before starting, make sure you have the Zora CLI basics — if they're not already in your context, fetch the core skill at `https://agents.zora.com/skill.md` (how to invoke the CLI, response shapes, error handling). Commands below use `zora` as shorthand for `npx @zoralabs/cli@latest`. Always use `--json` and check for `error` in responses.
+Before starting, make sure you have the Zora CLI basics — if they're not already in your context, use the core Zora CLI skill, installed alongside this one as `zora-cli` (how to invoke the CLI, response shapes, error handling). Commands below use `zora` as shorthand for `npx @zoralabs/cli@latest`. Always use `--json` and check for `error` in responses.
 
 ## Step 1: Determine mode
 
@@ -116,10 +116,9 @@ To get reliable volume and market cap before buying, pull details:
 
 ```bash
 zora get <address> --json
-zora get price-history <address> --interval 24h --json
 ```
 
-Use `marketCap` and 24h `volume` from these responses (prefer them over the summary in `explore`). Skip the coin if:
+`get <address>` returns `marketCap`, `volume24h`, and `uniqueHolders` (all as strings). Use its `marketCap` and `volume24h` (prefer them over the summary in `explore`). Skip the coin if:
 
 - `config.maxMarketCap` is set AND `marketCap > config.maxMarketCap` (already too large), or
 - `zora get` returns an error (don't act on stale or missing data).
@@ -130,7 +129,7 @@ Add every new address to `seen` as soon as you observe it — whether or not you
 
 For each qualifying coin (max 3 buys per iteration):
 
-1. Log: `SNIPE <name> (<address>) — trigger: <appearance|volume>, mcap: $<marketCap>, vol24h: $<volume>`
+1. Log: `SNIPE <name> (<address>) — trigger: <appearance|volume>, mcap: $<marketCap>, vol24h: $<volume24h>`
 2. Quote first: `zora buy <address> --eth <amount> --quote --json` (or `--usd <amount>`)
 3. If the quote succeeds and looks reasonable, execute:
    - ETH budget: `zora buy <address> --eth <amount> --yes --json`

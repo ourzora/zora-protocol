@@ -29,6 +29,9 @@ jobs:
       - name: Install node deps and foundry
         uses: ./.github/actions/setup_deps
 
+      - name: Check bundled skill content is up to date
+        run: pnpm --filter @zoralabs/cli generate:skills:check
+
       - name: Build js package
         run: |
           pnpm turbo run build:js

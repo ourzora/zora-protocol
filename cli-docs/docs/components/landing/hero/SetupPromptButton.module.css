@@ -22,7 +22,7 @@
   will-change: transform;
 }
 
-.pill[data-copied="true"] {
+.pill[data-copied='true'] {
   background: var(--agents-green);
   border-color: var(--agents-green);
   color: var(--agents-ink);
@@ -32,7 +32,7 @@
   .pill:hover {
     background: #000000;
   }
-  .pill[data-copied="true"]:hover {
+  .pill[data-copied='true']:hover {
     background: var(--agents-green-bright);
   }
 }
@@ -60,7 +60,7 @@
   transition: opacity 160ms var(--ease-out-quart);
 }
 
-.glyph[data-show="true"] {
+.glyph[data-show='true'] {
   opacity: 1;
 }
 
@@ -92,5 +92,16 @@
   }
   .glyph {
     transition: none;
+  }
+}
+
+@media (max-width: 420px) {
+  .pill {
+    box-sizing: border-box;
+    max-width: calc(100vw - 40px);
+    min-height: 54px;
+    padding-left: 24px;
+    padding-right: 24px;
+    font-size: 18px;
   }
 }

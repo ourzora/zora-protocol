@@ -14,7 +14,7 @@ You are a Zora portfolio-rebalancer agent. Your job is to keep the user's holdin
 
 ## Requirements
 
-Before starting, make sure you have the Zora CLI basics — if they're not already in your context, fetch the core skill at `https://agents.zora.com/skill.md` (how to invoke the CLI, response shapes, error handling). Commands below use `zora` as shorthand for `npx @zoralabs/cli@latest`. Always use `--json` and check for `error` in responses.
+Before starting, make sure you have the Zora CLI basics — if they're not already in your context, use the core Zora CLI skill, installed alongside this one as `zora-cli` (how to invoke the CLI, response shapes, error handling). Commands below use `zora` as shorthand for `npx @zoralabs/cli@latest`. Always use `--json` and check for `error` in responses.
 
 ## Step 1: Determine mode
 
@@ -37,14 +37,14 @@ Run:
 zora balance --json
 ```
 
-Show the user their current portfolio from the response: the `wallet` array (ETH/USDC/ZORA with `usdValue`) and the `coins` array (each entry has `name`, `address`, `coinType`, `usdValue`). Sum all `usdValue` fields to show total portfolio value.
+Show the user their current portfolio from the response: the `wallet` array (ETH/USDC/ZORA with `usdValue`) and the `coins` array (each entry has `name`, `address`, `type`, `usdValue`). The `type` field holds the human-readable category (`creator-coin`, `post`, `trend`); the raw `coinType` field holds the SDK enum (`CREATOR`, `CONTENT`, `TREND`) — bucket on `type`. Sum all `usdValue` fields to show total portfolio value.
 
 Ask the user which **allocation mode** they want:
 
 - **By category** — target percentages across buckets, summing to 100. The standard buckets are:
-  - `creator-coin` — coins where `coinType === "creator-coin"`
-  - `post` — coins where `coinType === "post"`
-  - `trend` — coins where `coinType === "trend"`
+  - `creator-coin` — coins where `type === "creator-coin"`
+  - `post` — coins where `type === "post"`
+  - `trend` — coins where `type === "trend"`
   - `cash` — the `wallet` array (ETH + USDC + ZORA)
 - **By coin** — target percentage per specific coin address, summing to 100 (any remainder is treated as `cash`).
 
@@ -96,12 +96,12 @@ From the response:
 
 1. Read the top-level `walletAddress` (the wallet these balances belong to) and note it in your report.
 2. Sum every `usdValue` in the `wallet` array → `cashUsd`. Within it, note the ETH entry (`symbol === "ETH"`) separately as `ethUsd` for the gas reserve check.
-3. For each entry in the `coins` array, read `usdValue`, `address`, and `coinType`.
+3. For each entry in the `coins` array, read `usdValue`, `address`, and `type` (the human-readable category — `creator-coin`, `post`, or `trend`; the raw `coinType` field is the SDK enum `CREATOR`/`CONTENT`/`TREND`).
 4. Compute the portfolio total = `cashUsd` + sum of all coin `usdValue`.
 
 **Bucket the coins:**
 
-- **Category mode** — group coin `usdValue` by `coinType` into `creator-coin`, `post`, and `trend`; `cash` is `cashUsd`.
+- **Category mode** — group coin `usdValue` by `type` into `creator-coin`, `post`, and `trend`; `cash` is `cashUsd`.
 - **By coin mode** — each target address's bucket value is that coin's `usdValue` (0 if not held); `cash` is `cashUsd`. Coins held but not in `targets` are ignored for sizing but reported as untracked.
 
 **Compute drift** for each bucket: `actualPct = bucketUsd / total * 100`; `drift = actualPct - targetPct`. The dollar delta to move is `delta = (targetPct - actualPct) / 100 * total`.
@@ -110,11 +110,11 @@ From the response:
 
 - **Overweight** (`drift > driftBand`, positive `bucketUsd`) → trim by `abs(delta)` USD:
   - **By coin mode:** `zora sell <address> --usd <delta> --yes --json` (or `--percent <p>` if selling a clean fraction of the position). Prefer the coin's `address`.
-  - **Category mode:** the bucket is several coins — trim the largest-`usdValue` holdings in that `coinType` first, summing `--usd` sells until `abs(delta)` is covered. Skip any individual sell below `minTrade`.
+  - **Category mode:** the bucket is several coins — trim the largest-`usdValue` holdings in that `type` first, summing `--usd` sells until `abs(delta)` is covered. Skip any individual sell below `minTrade`.
   - The `cash` bucket cannot be "sold"; an overweight `cash` bucket is corrected by the underweight buckets buying below.
 - **Underweight** (`drift < -driftBand`) → top up by `abs(delta)` USD:
   - **By coin mode:** `zora buy <address> --usd <delta> --yes --json`.
-  - **Category mode:** buy into existing holdings in that `coinType` (top up the largest position first), or if none are held, surface the shortfall to the user and skip — do not pick a new coin autonomously. Skip any buy below `minTrade`.
+  - **Category mode:** buy into existing holdings in that `type` (top up the largest position first), or if none are held, surface the shortfall to the user and skip — do not pick a new coin autonomously. Skip any buy below `minTrade`.
   - An underweight `cash` bucket is corrected automatically as overweight buckets are trimmed (sell proceeds default to ETH).
 
 **Before any single trade above $50 (or above the user's configured threshold), quote first:**

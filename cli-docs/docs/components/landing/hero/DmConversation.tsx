@@ -1,33 +1,31 @@
-import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from 'motion/react'
+import { useEffect, useState } from 'react'
 
-import styles from "./DmConversation.module.css";
-
-/**
- * Soft iMessage send/receive settle. framer's duration/bounce spring maps 1:1 to
- * SwiftUI's `spring(response:dampingFraction:)` that iMessage uses — here ≈
- * `.spring(response: 0.35, dampingFraction: 0.8)`.
- */
-const SEND_SPRING = { type: "spring", duration: 0.35, bounce: 0.2 } as const;
-
-/** The agent's replies, each delivered after its own "typing" beat. */
-const REPLIES = ["you're early 👀", "I'll put you on before it breaks"];
+import { DM_THREAD } from '../data'
+import styles from './DmConversation.module.css'
 
 /**
- * Delivery cadence, in ms from mount. Compressed to land both replies inside the
- * ~2.6s the panel is on screen, while keeping iMessage's multi-beat rhythm:
- * pause → type → reply → pause → type → reply.
+ * Clean, no-bounce settle for messages entering — a soft fade + small rise
+ * (easeOutQuint). Avoids the scale pop/bounce that read as clunky; smooth per the
+ * /emil-design-engineering enter guidance (ease-out, transform + opacity only).
  */
-const PRE_TYPING_MS = 300;
-const TYPING_1_MS = 650;
-const GAP_MS = 250;
-const TYPING_2_MS = 600;
+const EASE_OUT: [number, number, number, number] = [0.22, 1, 0.36, 1]
+
+/** Persona + script live in `data.ts` (single source for all landing copy). */
+const REPLIES = DM_THREAD.replies
 
 /**
- * Conversation phase. Each step swaps what the incoming slots show; a shared
- * `layoutId` per slot morphs the typing bubble into its reply.
+ * Delivery cadence, in ms from mount. The reply lands by ~1.2s, then holds for
+ * the rest of the hero dwell.
  */
-type Phase = "idle" | "typing1" | "reply1" | "typing2" | "reply2";
+const PRE_TYPING_MS = 300
+const TYPING_MS = 850
+
+/**
+ * Conversation phase. The incoming slot first shows typing, then morphs into
+ * the delivered reply via a shared `layoutId`.
+ */
+type Phase = 'idle' | 'typing' | 'reply'
 
 /** Bare inline glyphs — same convention as `PlatformLogo`. */
 const ChevronLeftGlyph = (
@@ -40,7 +38,7 @@ const ChevronLeftGlyph = (
       strokeLinejoin="round"
     />
   </svg>
-);
+)
 
 const EllipsisGlyph = (
   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -48,7 +46,7 @@ const EllipsisGlyph = (
     <circle cx="12" cy="12" r="1.7" />
     <circle cx="19" cy="12" r="1.7" />
   </svg>
-);
+)
 
 const PhotoGlyph = (
   <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -70,92 +68,77 @@ const PhotoGlyph = (
       strokeLinejoin="round"
     />
   </svg>
-);
+)
 
 interface DmConversationProps {
   /** Shared from the hero so motion stays gated in one place. */
-  reduceMotion?: boolean | null;
+  reduceMotion?: boolean | null
   /**
    * Reports pointer enter/leave on the panel so the hero can pause its term
    * cycle while this panel is hovered. Scoped to the panel (not the wider
    * stage) so empty space beside it doesn't trigger the pause; `undefined` on
    * touch pointers.
    */
-  onHoverChange?: (hovered: boolean) => void;
+  onHoverChange?: (hovered: boolean) => void
 }
 
 /**
  * An iMessage-style DM thread shown in the hero while the headline word is
  * "DMs". Built as real DOM (crisp + responsive) rather than a static image, and
  * animated like a real conversation: the outgoing message lands, the agent
- * "types", then its replies spring in. Under prefers-reduced-motion everything
+ * "types", then its reply springs in. Under prefers-reduced-motion everything
  * renders at rest immediately. Decorative — labelled as a single image for AT.
  */
-export function DmConversation({
-  reduceMotion,
-  onHoverChange,
-}: DmConversationProps) {
+export function DmConversation({ reduceMotion, onHoverChange }: DmConversationProps) {
   // Walk the delivery cadence; at rest jump straight to the finished thread.
-  const [phase, setPhase] = useState<Phase>(reduceMotion ? "reply2" : "idle");
+  const [phase, setPhase] = useState<Phase>(reduceMotion ? 'reply' : 'idle')
 
   useEffect(() => {
     if (reduceMotion) {
-      setPhase("reply2");
-      return;
+      setPhase('reply')
+      return
     }
-    setPhase("idle");
-    const t1 = PRE_TYPING_MS;
-    const t2 = t1 + TYPING_1_MS;
-    const t3 = t2 + GAP_MS;
-    const t4 = t3 + TYPING_2_MS;
+    setPhase('idle')
+    const t1 = PRE_TYPING_MS
+    const t2 = t1 + TYPING_MS
     const timers = [
-      setTimeout(() => setPhase("typing1"), t1),
-      setTimeout(() => setPhase("reply1"), t2),
-      setTimeout(() => setPhase("typing2"), t3),
-      setTimeout(() => setPhase("reply2"), t4),
-    ];
+      setTimeout(() => setPhase('typing'), t1),
+      setTimeout(() => setPhase('reply'), t2),
+    ]
 
-    return () => timers.forEach(clearTimeout);
-  }, [reduceMotion]);
+    return () => timers.forEach(clearTimeout)
+  }, [reduceMotion])
 
-  // Entrance for a single bubble / stamp. `origin` anchors the scale at the
-  // bubble's tail corner so it grows from where it sits, like iOS. No-op under
-  // reduced motion.
-  const enter = (
-    delay: number,
-    origin: "left" | "right" | "center" = "center",
-  ) =>
+  // Entrance for a single bubble / stamp — a soft fade + small rise, no scale,
+  // no bounce. No-op under reduced motion.
+  const enter = (delay: number) =>
     reduceMotion
       ? {}
       : {
-          initial: { opacity: 0, y: 6, scale: 0.9 },
-          animate: { opacity: 1, y: 0, scale: 1 },
-          transition: { ...SEND_SPRING, delay },
-          style: {
-            transformOrigin:
-              origin === "center" ? "bottom center" : `bottom ${origin}`,
-          },
-        };
+          initial: { opacity: 0, y: 8 },
+          animate: { opacity: 1, y: 0 },
+          transition: { duration: 0.34, ease: EASE_OUT, delay },
+        }
 
-  // Ordered incoming bubbles for the current phase. Each slot is either its
-  // typing indicator or its delivered reply, sharing a `layoutId` so the dots
-  // morph into the message. The last visible item carries the tail (iOS moves
-  // the tail to the newest bubble).
-  const slot1: "typing" | "reply" | null =
-    phase === "typing1" ? "typing" : phase === "idle" ? null : "reply";
-  const slot2: "typing" | "reply" | null =
-    phase === "typing2" ? "typing" : phase === "reply2" ? "reply" : null;
-
-  const incoming = [
-    slot1 && { id: "dm-lead-1", kind: slot1, text: REPLIES[0] },
-    slot2 && { id: "dm-lead-2", kind: slot2, text: REPLIES[1] },
-  ].filter(Boolean) as { id: string; kind: "typing" | "reply"; text: string }[];
+  // Distinct ids for typing vs reply so AnimatePresence cross-fades them in place
+  // (typing fades out, reply fades + rises in) rather than the typing pill
+  // inflating into the reply via a shared layout morph — which read as clunky.
+  const incoming =
+    phase === 'idle'
+      ? []
+      : phase === 'typing'
+        ? [{ id: 'dm-typing', kind: 'typing' as const, text: '' }]
+        : REPLIES.map((text, i) => ({
+            id: `dm-reply-${i}`,
+            kind: 'reply' as const,
+            text,
+          }))
 
   return (
     <div
       className={styles.panel}
       role="img"
-      aria-label="Example direct message with the agent zari"
+      aria-label={`Example direct message with the agent ${DM_THREAD.name}`}
       onMouseEnter={onHoverChange ? () => onHoverChange(true) : undefined}
       onMouseLeave={onHoverChange ? () => onHoverChange(false) : undefined}
     >
@@ -165,51 +148,59 @@ export function DmConversation({
           <span className={styles.avatarCrop}>
             <img
               className={styles.avatarImg}
-              src="/cards/zari.webp"
+              src={DM_THREAD.avatar}
               alt=""
               draggable={false}
             />
           </span>
-          <span className={styles.onlineDot} />
+          <motion.span
+            className={styles.onlineDot}
+            {...(reduceMotion
+              ? {}
+              : {
+                  initial: { scale: 0, opacity: 0 },
+                  animate: { scale: 1, opacity: 1 },
+                  // Arrive LAST — a beat after the panel has settled in.
+                  transition: { delay: 0.5, type: 'spring', stiffness: 500, damping: 26 },
+                })}
+          />
         </span>
         <span className={styles.identity}>
-          <span className={styles.name}>zari</span>
-          <span className={styles.sub}>203,402 $zari</span>
+          <span className={styles.name}>{DM_THREAD.name}</span>
+          <span className={styles.sub}>{DM_THREAD.token}</span>
         </span>
         <span className={styles.trade}>Trade</span>
         <span className={styles.more}>{EllipsisGlyph}</span>
       </header>
 
       <div className={styles.thread} aria-hidden="true">
-        <motion.div className={styles.dayStamp} {...enter(0)}>
-          <span className={styles.dayLabel}>Today</span>
-          <span className={styles.dayTime}>2:42 PM</span>
-        </motion.div>
-
         <motion.div
           className={`${styles.bubbleRow} ${styles.outgoingRow}`}
-          {...enter(0.12, "right")}
+          {...enter(0.05)}
         >
           <span className={`${styles.bubble} ${styles.outgoing}`}>
-            Hey zari what&apos;s next?
+            {DM_THREAD.outgoing}
           </span>
         </motion.div>
 
         <div className={styles.incomingArea}>
           <AnimatePresence mode="popLayout" initial={false}>
             {incoming.map((item, i) => {
-              const isLast = i === incoming.length - 1;
+              const isLast = i === incoming.length - 1
               return (
                 <motion.div
                   key={item.id}
-                  layoutId={item.id}
-                  layout={!reduceMotion}
                   className={`${styles.bubbleRow} ${styles.incomingRow} ${
-                    isLast ? "" : styles.groupedRow
+                    isLast ? '' : styles.groupedRow
                   }`}
-                  {...enter(0, "left")}
+                  {...enter(0)}
+                  exit={
+                    reduceMotion
+                      ? undefined
+                      : { opacity: 0, transition: { duration: 0.16 } }
+                  }
                 >
-                  {item.kind === "typing" ? (
+                  {item.kind === 'typing' ? (
                     <span
                       className={`${styles.bubble} ${styles.incoming} ${styles.typing}`}
                     >
@@ -218,16 +209,12 @@ export function DmConversation({
                       <span className={styles.dot} />
                     </span>
                   ) : (
-                    <span
-                      className={`${styles.bubble} ${styles.incoming} ${
-                        isLast ? "" : styles.noTail
-                      }`}
-                    >
+                    <span className={`${styles.bubble} ${styles.incoming}`}>
                       {item.text}
                     </span>
                   )}
                 </motion.div>
-              );
+              )
             })}
           </AnimatePresence>
         </div>
@@ -235,8 +222,8 @@ export function DmConversation({
 
       <div className={styles.inputBar} aria-hidden="true">
         <span className={styles.photo}>{PhotoGlyph}</span>
-        <span className={styles.inputField}>Message…</span>
+        <span className={styles.inputField}>Message...</span>
       </div>
     </div>
-  );
+  )
 }
