@@ -1,5 +1,5 @@
 /*
- * Zora CLI landing page — design tokens + shared type scale.
+ * Agents on Zora landing page — design tokens + shared type scale.
  *
  * Ported from the agents.zora.com design (ourzora/zora#3475). The marketing
  * sections are light by design (white page, bright brand green), so these
@@ -61,6 +61,12 @@
 /* The landing root. Locks the marketing surface to the brand light palette and
    the brand font, independent of the Vocs theme the rest of the docs use. */
 .zora-landing {
+  /* Clip any incidental horizontal overflow so the page can never render wider
+     than the device (Vocs has no `overflow-x` guard on the body, unlike the
+     source app). `clip` (not `hidden`) doesn't create a scroll container, so it
+     can't trap the fixed Vocs nav or break sticky descendants; overflow-y stays
+     visible. */
+  overflow-x: clip;
   background-color: var(--agents-page);
   color: var(--agents-ink);
   font-family: var(--font-sans);

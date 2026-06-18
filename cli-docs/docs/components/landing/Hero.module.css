@@ -20,7 +20,7 @@
   user-select: none;
   /* The brand-supplied prismatic light-burst artwork (optimized webp). The
      bright core is positioned just behind the headline. */
-  background-image: url("/hero-bg.webp");
+  background-image: url('/hero-bg.webp');
   background-repeat: no-repeat;
   background-position: center 32%;
   background-size: cover;
@@ -29,7 +29,7 @@
 
 /* Bottom fade so the full-bleed hero blends into the white sections below. */
 .hero::after {
-  content: "";
+  content: '';
   position: absolute;
   left: 0;
   right: 0;
@@ -39,11 +39,7 @@
      isolate` stacking context (not a page-level layer, so not on the token scale). */
   z-index: 1;
   pointer-events: none;
-  background: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0) 0%,
-    #ffffff 100%
-  );
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, #ffffff 100%);
 }
 
 /* Optional video bg, hidden until wired up. */
@@ -55,6 +51,29 @@
   height: 100%;
   object-fit: cover;
   pointer-events: none;
+  user-select: none;
+}
+
+/* ---- Brand mark (top-left) -------------------------------------------- */
+
+.brand {
+  position: absolute;
+  top: clamp(20px, 4vh, 40px);
+  left: clamp(20px, 4vw, 48px);
+  z-index: var(--z-content);
+  display: inline-flex;
+  border-radius: 999px;
+}
+
+.brand:focus-visible {
+  outline: 2px solid var(--agents-green);
+  outline-offset: 4px;
+}
+
+.brandZorb {
+  display: block;
+  width: clamp(40px, 5vw, 60px);
+  height: auto;
   user-select: none;
 }
 
@@ -76,6 +95,8 @@
   flex-direction: column;
   align-items: center;
   gap: 14px;
+  width: 100%;
+  min-width: 0;
   text-align: center;
 }
 
@@ -85,13 +106,16 @@
   font-weight: 400;
   /* ≥1 so the line never overlaps if the subhead copy ever wraps. */
   line-height: 1.05;
-  letter-spacing: -0.03em;
+  letter-spacing: 0;
   font-feature-settings:
-    "ss11" 1,
-    "ss05" 1,
-    "calt" 0;
+    'ss11' 1,
+    'ss05' 1,
+    'calt' 0;
   color: rgba(18, 18, 18, 0.72);
   margin: 0;
+  width: min(42rem, calc(100vw - 40px));
+  max-width: 100%;
+  text-wrap: balance;
 }
 
 .cta {
@@ -113,14 +137,53 @@
 
 @media (max-width: 768px) {
   .hero {
-    /* allow the card row to scroll edge-to-edge without clipping shadows */
-    padding-left: 0;
-    padding-right: 0;
+    align-items: center;
+    justify-content: flex-start;
+    /* Hug the content instead of forcing a full screen, so the hero is compact
+       and the sections below rise into view (matches the design comp). With the
+       brand orb gone the headline is the topmost element, so the top pad only
+       needs to clear the status bar / browser chrome. */
+    min-height: auto;
+    padding: clamp(48px, 6svh, 64px) 20px 36px;
   }
-  .intro,
-  .cta,
-  .content > :last-child {
-    padding-left: 20px;
-    padding-right: 20px;
+
+  .background {
+    background-position: center top;
+  }
+
+  /* Pull the white up on mobile so the prismatic burst reads as a top-of-hero
+     accent behind the headline, and the cards / CTA / marks sit on clean white
+     (matches the comp — the desktop scrim stays a bottom-only blend). */
+  .hero::after {
+    top: 0;
+    height: 100%;
+    background: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0) 20%,
+      #ffffff 46%
+    );
+  }
+
+  .content {
+    gap: 20px;
+    /* Full column width capped to the viewport — NOT 100vw, which adds the
+       scrollbar gutter and renders wider than the device. The base
+       `align-items: center` then centres every child for free. */
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .brand {
+    /* Hide the brand orb on mobile: with the hero centred, a lone top-left orb
+       reads lopsided. The headline becomes the topmost element (matches the
+       reference); brand presence stays via the footer wordmark. Desktop keeps it. */
+    display: none;
+  }
+
+  .subhead {
+    width: 100%;
+    max-width: 100%;
+    line-height: 1.15;
   }
 }

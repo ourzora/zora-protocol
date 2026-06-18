@@ -3,14 +3,16 @@
 .panel {
   display: flex;
   flex-direction: column;
-  width: clamp(340px, 30vw, 400px);
+  width: clamp(380px, 36vw, 420px);
   max-width: 100%;
   margin-inline: auto;
   background: #ffffff;
   border: 1px solid #e4e4e4;
   border-radius: var(--agents-radius);
   box-shadow: 0 12px 40px rgba(18, 18, 18, 0.18);
-  overflow: hidden;
+  /* No `overflow: hidden` — border-radius alone rounds the corners (no child
+     reaches them), and clipping would cut off the shared avatar as it morphs in
+     from the network card. */
   text-align: left;
 }
 
@@ -43,21 +45,19 @@
 .avatarCrop {
   position: absolute;
   inset: 0;
+  padding: 2px;
+  border: 2px solid #d7d7d7;
   border-radius: 50%;
   overflow: hidden;
   background: #f2f2f2;
 }
 
-/* The Zari card art (968×601) frames her portrait avatar in the top-left;
-   scale the whole card up and offset so just that portrait fills the 40px
-   circle. Offsets are tied to this size — revisit if the avatar resizes. */
 .avatarImg {
-  position: absolute;
-  top: -12px;
-  left: -17px;
-  width: 219px;
-  height: auto;
-  max-width: none;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
   user-select: none;
 }
 
@@ -105,8 +105,11 @@
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
-  padding: 7px 16px;
-  border-radius: 999px;
+  /* Rounded rectangle (not a full pill) — matches the production Zora DM header
+     Trade button. A 999px radius turned the short "Trade" label into an oversized
+     lozenge on the narrow mobile panel. */
+  padding: 8px 14px;
+  border-radius: 10px;
   background: var(--agents-green);
   color: var(--agents-ink);
   font-size: 14px;
@@ -130,43 +133,24 @@
   height: 100%;
 }
 
-/* ---- Thread -------------------------------------------------------------- */
+/* ---- Thread (compact — no day stamp; header → bubbles → input) ----------- */
 .thread {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 12px 16px 10px;
+  padding: 12px 16px 8px;
 }
 
-/* Reserve the space the agent's replies will occupy, so the panel never grows or
-   jumps as the typing indicator and replies arrive. The two short single-line
-   replies measure ~71px at every width; round up so the slot is always large
-   enough for the typing bubble and both replies. */
+/* Reserve exactly the space the agent's reply occupies, so the panel never
+   grows or jumps as the typing indicator → reply arrive (and so the CTA below
+   the deck never shifts). Sized to the compact-width reply + a little headroom;
+   the mobile override (below) reserves more since the narrower panel wraps it
+   taller. */
 .incomingArea {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  min-height: 72px;
-}
-
-.dayStamp {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  margin: 0 0 4px;
-}
-
-.dayLabel {
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: #8a8a8a;
-}
-
-.dayTime {
-  font-size: 12px;
-  color: #b5b5b5;
+  min-height: 116px;
 }
 
 .bubbleRow {
@@ -185,35 +169,29 @@
   position: relative;
   max-width: 78%;
   padding: 8px 14px;
-  border-radius: 18px;
+  /* Fully rounded, no tail — matches Zora's real DM bubbles (web + mobile use
+     reshaped `neutral-faded` bubbles at radius `xlarge`, no iOS-style tail). */
+  border-radius: 20px;
   font-size: 15px;
   line-height: 1.3;
   letter-spacing: -0.01em;
   word-break: break-word;
 }
 
-/* Bubble corners — the tail-side bottom corner is tucked in (small radius) while
-   the other three stay fully round. This is the clean, modern iMessage read used
-   for grouped messages: unmistakably an iOS thread, and rock-solid at every size
-   and device-pixel-ratio (pure border-radius — nothing to misalign). */
+/* Bubble fills mirror the real product: outgoing = `background-blue-autosell`
+   (#006FFF), incoming = `background-neutral-faded` (#F5F5F5) on ink text. */
 .outgoing {
-  background: #007aff;
+  background: #006fff;
   color: #ffffff;
-  border-bottom-right-radius: 6px;
 }
 
 .incoming {
-  background: #e9e9eb;
+  background: #f5f5f5;
   color: var(--agents-ink);
-  border-bottom-left-radius: 6px;
 }
 
-/* Grouped bubbles (same sender, not the last in the run) round fully — only the
-   final bubble keeps the tucked corner — and sit tighter, as iOS clusters them. */
-.noTail {
-  border-bottom-left-radius: 18px;
-}
-
+/* Grouped bubbles (same sender, not the last in the run) sit tighter, as the
+   thread clusters them. Corners stay fully round on every bubble. */
 .groupedRow {
   /* Offsets the .thread row gap (6px) down to the ~2px iOS uses within a run. */
   margin-bottom: -4px;
@@ -289,16 +267,64 @@
   min-width: 0;
   padding: 9px 16px;
   border-radius: 999px;
-  background: #f2f2f3;
-  color: #9a9a9f;
+  background: #fafafa;
+  color: #b5b5b5;
   font-size: 15px;
   line-height: 1.3;
   letter-spacing: -0.01em;
 }
 
 @media (max-width: 768px) {
+  /* Go wider on mobile (tighter gutters) so the long reply wraps onto fewer
+     lines — which makes the whole module shorter (the deck reserves less height
+     and the CTA rides up). The reply text is unchanged. */
   .panel {
-    width: min(360px, 88vw);
+    width: min(440px, calc(100vw - 24px));
+  }
+
+  /* Let the reply fill more of the wider panel, dropping more lines. */
+  .bubble {
+    max-width: 90%;
+  }
+
+  /* Smaller, prod-proportioned Trade pill — the rounded-rect still read a touch
+     big on the narrow header. */
+  .trade {
+    padding: 5px 11px;
+    border-radius: 9px;
+    font-size: 13px;
+  }
+
+  /* Tighten the panel chrome on mobile (NOT the reply text) so the hero deck
+     reserves less height and the CTA below rides up. Reply reservation is set
+     to the wrapped reply's real height so it still never grows when it lands. */
+  .header {
+    padding: 8px 16px;
+  }
+
+  .thread {
+    padding: 8px 16px 6px;
+  }
+
+  .incomingArea {
+    min-height: 118px;
+  }
+
+  .inputBar {
+    padding: 6px 16px 10px;
+  }
+
+  .inputField {
+    padding: 7px 16px;
+  }
+}
+
+/* Very small phones (<360px): the narrower panel wraps the reply onto an extra
+   line, so reserve that taller height up front — keeps the bubble from growing
+   the panel (and shifting the CTA) when the reply lands. */
+@media (max-width: 359.98px) {
+  .incomingArea {
+    min-height: 138px;
   }
 }
 

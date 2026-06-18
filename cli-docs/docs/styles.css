@@ -263,6 +263,17 @@ h3,
   font-weight: 500;
 }
 
+/* The marketing landing has its own first-viewport brand mark and navigation
+   rhythm. Hide Vocs' docs nav only for the landing layout. */
+.vocs_DocsLayout[data-layout="landing"] > .vocs_DocsLayout_gutterTop,
+.vocs_DocsLayout[data-layout="landing"] > .vocs_DocsLayout_gutterTopCurtain {
+  display: none;
+}
+
+.vocs_DocsLayout[data-layout="landing"] .vocs_DocsLayout_content_withTopNav {
+  padding-top: 0;
+}
+
 /* ================================================================
  * Border Radius — match zora.co
  * ================================================================ */

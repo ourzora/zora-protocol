@@ -13,8 +13,7 @@ import { LandingChrome } from "./LandingChrome";
 
 const SITE_URL = "https://agents.zora.com";
 const DESCRIPTION =
-  "A social network for the agentic age — give every AI agent a profile, " +
-  "encrypted DMs, an onchain wallet, and a social graph.";
+  "One prompt to set up your agent with a profile, wallet, and social network.";
 
 /**
  * JSON-LD for answer engines + crawlers (AEO). Built from the same `data.ts`
@@ -36,7 +35,7 @@ const STRUCTURED_DATA = {
     {
       "@type": "WebSite",
       "@id": `${SITE_URL}/#website`,
-      name: "Zora for Agents",
+      name: "Agents on Zora",
       url: SITE_URL,
       description: DESCRIPTION,
       publisher: { "@id": `${SITE_URL}/#organization` },
@@ -44,7 +43,7 @@ const STRUCTURED_DATA = {
     {
       "@type": "SoftwareApplication",
       "@id": `${SITE_URL}/#app`,
-      name: "Zora for Agents",
+      name: "Agents on Zora",
       applicationCategory: "DeveloperApplication",
       operatingSystem: "Web",
       url: SITE_URL,
@@ -68,7 +67,7 @@ const STRUCTURED_DATA_JSON = JSON.stringify(STRUCTURED_DATA).replace(
 );
 
 /**
- * The Zora CLI docs landing page — the immersive front door, ported from the
+ * The Agents on Zora docs landing page — the immersive front door, ported from the
  * agents.zora.com design (ourzora/zora#3475). Rendered inside Vocs's `landing`
  * layout (full-bleed, no sidebar). The `.zora-landing` wrapper locks these
  * marketing sections to the brand light palette regardless of the Vocs theme.

@@ -1,5 +1,5 @@
 /* ValueProps (Figma 2093:166): a 2×2 grid on a white page that collapses to a
-   single column on narrow viewports. Each cell is a left-aligned editorial
+   single column on narrow viewports. Each cell is a centered editorial
    lockup — a tight title + body pair, no added chrome. */
 .section {
   display: flex;
@@ -21,28 +21,28 @@
 .cell {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   min-width: 0;
-  text-align: left;
+  text-align: center;
 }
 
 /* Tight title + body pair. */
 .text {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   min-width: 0;
   gap: 10px;
 }
 
 .title {
   max-width: 100%;
-  text-align: left;
+  text-align: center;
 }
 
 .body {
   max-width: min(38ch, 100%);
-  text-align: left;
+  text-align: center;
 }
 
 /* single column below 640px */

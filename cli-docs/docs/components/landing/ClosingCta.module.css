@@ -125,6 +125,36 @@
   border: 1.5px solid #121212;
 }
 
+/* Copy confirmation — flips to brand green, mirroring the hero's top CTA. */
+.ctaPrimary[data-copied='true'] {
+  background-color: var(--agents-green);
+  border-color: var(--agents-green);
+  color: #121212;
+}
+
+/* Reserve the wider label's width so the pill never resizes on the
+   "Copy prompt" → "Copied" flip (no layout shift). */
+.labelSlot {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.labelSizer {
+  visibility: hidden;
+  white-space: nowrap;
+}
+
+.label {
+  position: absolute;
+  inset: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
 .ctaSecondary {
   background-color: transparent;
   color: #121212;
@@ -139,6 +169,9 @@
 @media (hover: hover) and (pointer: fine) {
   .ctaPrimary:hover {
     background-color: #000000;
+  }
+  .ctaPrimary[data-copied='true']:hover {
+    background-color: var(--agents-green-bright);
   }
   /* The outlined secondary CTA gets no fill on hover — the framer scale-grow
      (whileHover) is enough feedback; a gray wash muddied the clean outline. */

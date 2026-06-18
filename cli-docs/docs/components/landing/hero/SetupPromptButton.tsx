@@ -1,6 +1,6 @@
 import { motion, useReducedMotion } from "motion/react";
 
-import { SETUP_PROMPT } from "../data";
+import { SETUP_FALLBACK_HREF, SETUP_PROMPT } from "../data";
 import { Icon } from "../Icon";
 import { useCopyToClipboard } from "../lib/useCopyToClipboard";
 import { useHoverCapable } from "../lib/useHoverCapable";
@@ -14,28 +14,28 @@ const PRESS_SPRING = { type: "spring", stiffness: 500, damping: 30 } as const;
  * "Copied" confirmation for ~1.8s. Label width is reserved so the pill does not
  * resize when the text changes (zero layout shift). Hover-grow is gated to
  * hover-capable pointers; tap-press feedback works on touch.
- *
- * If copying isn't possible (insecure origin with no Clipboard API, or a
- * permissions rejection) we don't fake a "Copied" state — instead we send the
- * user to the skill page, which has the same prompt written out to copy by hand.
  */
 export function SetupPromptButton() {
   const reduceMotion = useReducedMotion();
   const hoverable = useHoverCapable();
   const { copied, copy } = useCopyToClipboard();
 
-  const handleClick = async () => {
-    const didCopy = await copy(SETUP_PROMPT);
-    if (!didCopy && typeof window !== "undefined") {
-      window.location.href = "/skill";
-    }
+  // Copy the prompt; if the clipboard isn't available (insecure origin, no
+  // Clipboard API, or a denied permission) fall back to the skill docs page so
+  // the user still reaches the setup instructions instead of getting nothing.
+  const copyOrFallback = () => {
+    void copy(SETUP_PROMPT).then((ok) => {
+      if (!ok && typeof window !== "undefined") {
+        window.location.href = SETUP_FALLBACK_HREF;
+      }
+    });
   };
 
   return (
     <motion.button
       type="button"
       className={styles.pill}
-      onClick={handleClick}
+      onClick={copyOrFallback}
       data-copied={copied}
       whileHover={hoverable && !reduceMotion ? { scale: 1.04 } : undefined}
       whileTap={reduceMotion ? undefined : { scale: 0.96 }}
@@ -59,10 +59,10 @@ export function SetupPromptButton() {
       <span className={styles.icon} aria-hidden="true">
         {/* Cross-fade the glyph; both stacked so width never changes. */}
         <span className={styles.glyph} data-show={!copied}>
-          <Icon name="copy" size={22} />
+          <Icon name="copy" size={24} />
         </span>
         <span className={styles.glyph} data-show={copied}>
-          <Icon name="check" size={22} />
+          <Icon name="check" size={24} />
         </span>
       </span>
     </motion.button>

@@ -1,0 +1,187 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  width: 486px;
+  min-height: 282px;
+  padding: 16px 22px 22px;
+  border-radius: 28px;
+  background: #ffffff;
+  box-shadow: 0 2.6px 24.7px rgba(0, 0, 0, 0.15);
+  color: var(--agents-ink);
+  text-align: left;
+  user-select: none;
+}
+
+.avatarFrame {
+  display: block;
+  flex: 0 0 auto;
+  width: 92px;
+  height: 92px;
+  padding: 5px;
+  border: 4.5px solid #989898;
+  border-radius: 50%;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.avatarImg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.nameRow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  margin-top: 6px;
+}
+
+.name {
+  min-width: 0;
+  color: #121212;
+  font-size: 26px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.hermesGlyph {
+  flex: 0 0 auto;
+  width: 21px;
+  height: 21px;
+  background: #b5b5b5;
+  -webkit-mask: url('/agents/hermes.svg') center / contain no-repeat;
+  mask: url('/agents/hermes.svg') center / contain no-repeat;
+}
+
+.agentPill {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 2px 7px 1px;
+  border: 2px solid #b5b5b5;
+  border-radius: 7.5px;
+  color: #b5b5b5;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0;
+  font-feature-settings:
+    'ss11' 1,
+    'ss05' 1,
+    'calt' 0;
+}
+
+.bio {
+  display: block;
+  margin-top: 10px;
+  color: #4d4d4d;
+  font-size: 18.5px;
+  font-weight: 400;
+  line-height: 1.18;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.statsRow {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-top: 11px;
+  white-space: nowrap;
+}
+
+.statGroup {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
+}
+
+.triangle {
+  flex: 0 0 auto;
+  align-self: center;
+  display: inline-flex;
+  width: 18px;
+  height: 16px;
+  color: var(--agents-green);
+}
+
+.triangle svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.statValue {
+  color: #121212;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: 0;
+}
+
+.statLabel {
+  color: #878787;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: 0;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 11px;
+}
+
+.action,
+.messageAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 45px;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.action {
+  min-width: 0;
+  border-radius: 11px;
+}
+
+.buy {
+  flex: 1 1 178px;
+  background: var(--agents-green);
+  color: #000000;
+}
+
+/* Dark-fill Follow — matches the real Zora profile (background-primary #121212,
+   white text), not the Figma mock's light-gray pill. */
+.follow {
+  flex: 1.1 1 195px;
+  background: var(--agents-ink);
+  color: #ffffff;
+}
+
+.messageAction {
+  flex: 0 0 45px;
+  border: 1.5px solid #e2e2e2;
+  border-radius: 11px;
+  background: #ffffff;
+  color: #b3b3b3;
+}
+
+.messageAction svg {
+  display: block;
+  width: 23px;
+  height: 20px;
+}

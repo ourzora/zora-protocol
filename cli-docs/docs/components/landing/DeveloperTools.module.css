@@ -22,7 +22,7 @@
    100vw pseudo so the content stays centered without a markup wrapper; the
    page's overflow-x:hidden clips the bleed so there's no horizontal scroll. */
 .section::before {
-  content: "";
+  content: '';
   position: absolute;
   inset-block: 0;
   left: calc(50% - 50vw);
@@ -58,30 +58,31 @@
   min-width: 0;
 }
 
-/* Each column (CLI / Skill) — left-aligned editorial lockup. The chip, title,
-   body, and snippet box share one left edge. Transparent: no outer card fill. */
+/* Each column (CLI / Skill) — centered editorial lockup. The icon, title, body,
+   and snippet box stack and centre on one axis. Transparent: no outer card fill. */
 .column {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   width: 100%;
   min-width: 0;
   gap: clamp(16px, 2.5vh, 24px);
-  text-align: left;
+  text-align: center;
 }
 
-/* Icon sits inline to the LEFT of the title — a horizontal lockup (<icon> CLI). */
+/* Icon sits ABOVE the title — a centered vertical lockup (<icon> over CLI). */
 .titleRow {
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 14px;
 }
 
-/* Bare icon glyph, sized to balance the title beside it. */
+/* Bare icon glyph — sized to match the Features lockup glyphs above (52px). */
 .icon {
   display: block;
-  width: 32px;
-  height: 32px;
+  width: 52px;
+  height: 52px;
   flex-shrink: 0;
   color: var(--agents-ink);
 }
@@ -92,7 +93,7 @@
 .text {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   width: 100%;
   min-width: 0;
   flex: 1;
@@ -103,16 +104,18 @@
   font-size: clamp(1.5rem, 2.1vw, 2rem);
   line-height: 1.04;
   letter-spacing: -0.01em;
-  text-align: left;
+  text-align: center;
 }
 
 .body {
-  max-width: min(40ch, 100%);
-  font-size: clamp(1rem, 1.15vw, 1.125rem);
-  line-height: 1.3;
-  letter-spacing: 0;
-  color: rgba(18, 18, 18, 0.68);
-  text-align: left;
+  max-width: min(28ch, 100%);
+  /* Figma node body: 33px / 500 / 100% / -0.462px (-0.014em), #969696. */
+  font-size: clamp(1.25rem, 1.6vw, 1.5rem);
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: -0.014em;
+  color: #969696;
+  text-align: center;
 }
 
 /* Command box (the whole box is the copy button). Subtly rounded to match the
@@ -133,10 +136,6 @@
   border-radius: var(--agents-radius);
   cursor: pointer;
   text-align: left;
-  /* Reset native <button> chrome (this is the copy button). */
-  appearance: none;
-  font: inherit;
-  color: inherit;
 }
 
 .snippet:focus-visible {
@@ -147,10 +146,13 @@
 .snippetText {
   flex: 1;
   min-width: 0;
+  padding: 0 !important;
   font-family: var(--agents-mono);
   font-size: 0.8125rem;
   line-height: 1.5;
-  color: rgba(18, 18, 18, 0.8);
+  color: rgba(18, 18, 18, 0.8) !important;
+  background: transparent !important;
+  border-radius: 0 !important;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -188,34 +190,10 @@
   }
 }
 
-/* Per-card docs link under the snippet box. */
-.docsLink {
-  font-size: 1rem;
-  line-height: 1.3;
-  color: var(--agents-ink);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.docsLink:focus-visible {
-  outline: 2px solid var(--agents-green);
-  outline-offset: 2px;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .docsLink {
-    transition: color 150ms var(--ease-out-quad);
-  }
-
-  .docsLink:hover {
-    color: rgba(18, 18, 18, 0.68);
-  }
-}
-
 /* Compact the icon on phones, matching the Features lockup. */
 @media (max-width: 599px) {
   .icon {
-    width: 28px;
-    height: 28px;
+    width: 44px;
+    height: 44px;
   }
 }

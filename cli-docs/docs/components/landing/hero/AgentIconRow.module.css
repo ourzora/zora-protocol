@@ -5,11 +5,11 @@
   gap: 16px;
 }
 
-/* Figma 2093:31 — Monument Regular, muted #969696. */
+/* Monument Medium, muted #969696 — medium weight reads more present. */
 .caption {
   font-size: 14px;
-  font-weight: 400;
-  letter-spacing: -0.014em;
+  font-weight: 500;
+  letter-spacing: 0;
   color: #969696;
   margin: 0;
 }
@@ -17,11 +17,15 @@
 /* Bare marks, evenly spaced on one centerline (no chip boxes). */
 .chips {
   display: flex;
+  flex-wrap: nowrap;
+  justify-content: space-between;
   align-items: center;
-  gap: 24px;
+  gap: 0;
   list-style: none;
   margin: 0;
   padding: 0;
+  width: min(320px, calc(100vw - 56px));
+  max-width: 100%;
 }
 
 /* Transform (hover-grow spring) is owned by motion in AgentIconRow.tsx, which
@@ -35,6 +39,8 @@
 
 .logo {
   display: block;
+  width: clamp(28px, 8.4vw, 36px);
+  height: clamp(28px, 8.4vw, 36px);
   color: var(--agents-ink);
 }
 
@@ -48,4 +54,18 @@
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+@media (max-width: 768px) {
+  /* Larger caption + a tighter, centred logo row on mobile — the wide
+     space-between spread across `min(320px, …)` read as too sparse on a phone. */
+  .caption {
+    font-size: 16px;
+  }
+
+  .chips {
+    width: auto;
+    justify-content: center;
+    gap: clamp(18px, 5.5vw, 26px);
+  }
 }
