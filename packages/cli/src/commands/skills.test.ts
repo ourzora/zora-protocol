@@ -225,6 +225,12 @@ describe("skills add", () => {
   });
 });
 
+// Integrity enforcement is currently disabled (SKILL_INTEGRITY_ENFORCED = false in
+// skills.ts) because remotely-served skills drift from the CLI's baked hashes and break
+// every routine skill update with a "compromised download" error. While disabled,
+// downloaded content installs regardless of whether it matches the baked hash. The
+// enforcement-specific cases below are `it.skip`'d and restored together with the
+// integrity redesign. Tracking: SEC-250 (original finding) + redesign ticket.
 describe("skills integrity verification", () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
   let tmpDir: string;
@@ -244,23 +250,17 @@ describe("skills integrity verification", () => {
     vi.restoreAllMocks();
   });
 
-  it("fails installation when integrity check fails", async () => {
+  it("installs skills even when content does not match the baked hash (enforcement disabled)", async () => {
     mockFetchOk("# Different content that won't match hash");
 
     const program = createProgram(skillsCommand);
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
-      throw new Error("exit");
+    await program.parseAsync(["skills", "add", "copy-trader"], {
+      from: "user",
     });
 
-    await expect(
-      program.parseAsync(["skills", "add", "copy-trader"], { from: "user" }),
-    ).rejects.toThrow();
-
-    const output = errorSpy.mock.calls.map((c) => c[0]).join("\n");
-    expect(output).toContain("integrity check failed");
-    expect(output).toContain("--skip-verify");
-
-    exitSpy.mockRestore();
+    expect(
+      existsSync(join(tmpDir, ".claude/skills/zora-copy-trader/SKILL.md")),
+    ).toBe(true);
   });
 
   it("skips integrity check with --skip-verify", async () => {
@@ -277,7 +277,7 @@ describe("skills integrity verification", () => {
     ).toBe(true);
   });
 
-  it("includes expected and received hashes in error message", async () => {
+  it.skip("includes expected and received hashes in error message", async () => {
     const content = "# Tampered content";
     mockFetchOk(content);
 
@@ -299,7 +299,7 @@ describe("skills integrity verification", () => {
     exitSpy.mockRestore();
   });
 
-  it("exits non-zero when --all has all integrity failures", async () => {
+  it.skip("exits non-zero when --all has all integrity failures", async () => {
     // Mock fetch to return content that won't match any hash
     let callCount = 0;
     vi.spyOn(globalThis, "fetch").mockImplementation(() => {
@@ -324,7 +324,7 @@ describe("skills integrity verification", () => {
     exitSpy.mockRestore();
   });
 
-  it("exits non-zero when partial install has integrity failures (some succeed, some fail)", async () => {
+  it.skip("exits non-zero when partial install has integrity failures (some succeed, some fail)", async () => {
     // This tests the partial-failure path (lines 350-387 in skills.ts)
     // where installed.length > 0 AND hasIntegrityErrors is true
     const logSpy = vi.spyOn(console, "log");
