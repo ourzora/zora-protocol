@@ -7,16 +7,6 @@ import { track } from "../lib/analytics.js";
 
 const DEFAULT_SKILLS_BASE_URL = "https://agents.zora.com/skill";
 
-// Integrity verification is temporarily disabled. The baked-in hashes pin skill
-// content to a snapshot frozen at CLI publish time, but skills are served remotely
-// and updated independently of CLI releases, so the two drift apart and every routine
-// skill update fails the check with a "compromised download" error for already-installed
-// CLIs. This needs a redesign that survives independent skill updates (bundle skills in
-// the package, or sign them and verify a signature instead of pinning content) before it
-// can be turned back on. Re-enabling is a one-line flip of this flag.
-// Tracking: SEC-250 (original finding) + redesign ticket.
-const SKILL_INTEGRITY_ENFORCED = false;
-
 const getSkillsBaseUrl = (): string =>
   process.env.ZORA_SKILLS_BASE_URL || DEFAULT_SKILLS_BASE_URL;
 
@@ -210,7 +200,7 @@ const fetchSkill = async (
   }
   const content = await response.text();
 
-  if (SKILL_INTEGRITY_ENFORCED && !skipVerify) {
+  if (!skipVerify) {
     const actual = computeIntegrity(content);
     if (actual !== expectedIntegrity) {
       throw new Error(
