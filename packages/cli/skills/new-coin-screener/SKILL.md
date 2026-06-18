@@ -106,7 +106,7 @@ For each coin in the feed whose `address` is **NOT** in `seen`, evaluate the scr
 
 1. **Allowlist gate** — if `creatorAllowlist` is set and the coin's creator handle is not in it, mark the address as seen and skip.
 2. Fetch details: `zora get <address> --json` — read `marketCap` and the creator handle.
-3. Fetch holders: `zora get holders <address> --json` — count the holders returned (use the total holder count if present, otherwise the length of the holders array; paginate via `pageInfo.endCursor` / `--after` only if needed to confirm the minimum).
+3. Fetch holders: `zora get holders <address> --json` — count the holders returned (use the top-level `totalHolders` count if present, otherwise the length of the `holders` array; paginate via the top-level `nextCursor` passed as `--after` only if needed to confirm the minimum).
 4. **Screen:** the coin passes only if `marketCap >= minMarketCap` AND `holders >= minHolders`.
 5. **Mark the address as seen regardless of pass or fail** so it is never re-evaluated.
 6. If the coin **fails**, log the reason (`<name>: skipped — market cap $<mc> / <holders> holders`) and move on.

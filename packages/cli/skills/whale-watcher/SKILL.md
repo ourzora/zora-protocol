@@ -43,7 +43,7 @@ Ask the user:
 
 2. **Whale definition** — one or both of:
    - **Top-N holders** — treat the largest N holders as whales (suggest top 10). A change in this set (a new address entering the top N, or an existing top holder leaving) is a whale event.
-   - **Minimum USD trade size** — treat any single trade at or above this `amountUsd` as a whale trade (suggest $1,000).
+   - **Minimum USD trade size** — treat any single trade whose `valueUsd` is at or above this threshold as a whale trade (suggest $1,000).
 
 3. **Actions** — what to do when a whale event fires (default is **alert only**, the safest):
    - **Alert** — report the event to the operator. Always on.
@@ -75,7 +75,7 @@ zora get trades <address> --limit 20 --json
 ```
 
 - From holders, record the top-N holder addresses as `knownTopHolders`.
-- From trades (returned **most-recent-first**, with fields `side` = `BUY`|`SELL`, `amountUsd`, `transactionHash`, `timestamp`), record the newest trade's `timestamp` (or `transactionHash`) as `lastSeenTrade`. If there are no trades, use `null`.
+- From the `trades` array (returned **most-recent-first**, with fields `type` = `BUY`|`SELL`, `valueUsd`, `sender`, `senderHandle`, `coinAmount`, `transactionHash`, `timestamp`), record the newest trade's `timestamp` (or `transactionHash`) as `lastSeenTrade`. If there are no trades, use `null`.
 
 ### Step 4: Save state
 
@@ -133,7 +133,7 @@ For each watched coin (always use the `address`, never the name):
    zora get trades <address> --limit 20 --json
    ```
 
-   Trades are returned **most-recent-first** with fields `side` (`BUY`|`SELL`), `amountUsd`, `transactionHash`, and `timestamp`.
+   The `trades` array is returned **most-recent-first** with fields `type` (`BUY`|`SELL`), `valueUsd`, `sender`, `senderHandle`, `coinAmount`, `transactionHash`, and `timestamp`. (Note: `get trades` has no per-trade coin address — the coin is the one you queried — and the USD field is `valueUsd`, not `amountUsd`.)
 
 **Detect holder-set changes** (if `topN` is configured):
 
@@ -146,23 +146,23 @@ For each watched coin (always use the `address`, never the name):
 **Detect large trades** (if `minTradeUsd` is configured):
 
 - Walk trades and keep only those newer than `lastSeenTrade` (by `timestamp`; if `lastSeenTrade` is `null`, treat all as new). Stop at the first trade whose `transactionHash` equals `lastSeenTrade`.
-- Of those, keep trades where `amountUsd >= minTradeUsd`. Reverse so they're processed oldest-first.
-- A large `SELL` from a current top holder is a **dump**; a large `BUY` is a **whale entry**.
+- Of those, keep trades where `valueUsd >= minTradeUsd`. Reverse so they're processed oldest-first.
+- A large `SELL` (`type === "SELL"`) whose `sender` is a current top holder is a **dump**; a large `BUY` (`type === "BUY"`) is a **whale entry**.
 
-**Alert** (always): report each detected event — coin name, event type (entered / left / large BUY / large SELL), `amountUsd`, the address involved, and `transactionHash` where applicable.
+**Alert** (always): report each detected event — coin name, event type (entered / left / large BUY / large SELL), `valueUsd`, the address involved (the trade's `sender` for trade events, or the holder address for holder-set changes), and `transactionHash` where applicable.
 
 **Act** (only the enabled, gated auto-actions; respect `maxTradesPerIteration` across all coins):
 
 - **Auto-sell on dump** (only if `config.autoSellOnDump` is true) — on a large `SELL` from a top holder:
   1. Confirm the user holds the coin (from `zora balance --json`, `coins` array). Skip if not held.
-  2. Log: `WHALE DUMP on <name> — selling per config (trade $<amountUsd>, tx <transactionHash>)`
+  2. Log: `WHALE DUMP on <name> — selling per config (trade $<valueUsd>, tx <transactionHash>)`
   3. If the position exceeds `quoteThresholdEth`, preview first: `zora sell <address> --percent <sellPercent> --quote --json` (use `--all` if `sellPercent === 100`).
   4. Execute: `zora sell <address> --percent <sellPercent> --yes --json` (or `--all` if `sellPercent === 100`).
   5. Report coin name, amount sold, received, tx hash.
 
 - **Auto-buy on entry** (only if `config.autoBuyOnEntry` is true) — on a large `BUY`:
   1. Check spendable ETH: `zora balance --json` (`wallet` array, `symbol === "ETH"`). Skip if too low.
-  2. Log: `WHALE ENTRY on <name> — buying per config (trade $<amountUsd>, tx <transactionHash>)`
+  2. Log: `WHALE ENTRY on <name> — buying per config (trade $<valueUsd>, tx <transactionHash>)`
   3. Quote first if the budget exceeds `quoteThresholdEth`: `zora buy <address> --eth <buyBudgetEth> --quote --json`. Skip if the quote fails.
   4. Execute: `zora buy <address> --eth <buyBudgetEth> --yes --json`.
   5. Report coin name, amount received, tx hash.
