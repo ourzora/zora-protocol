@@ -55,6 +55,9 @@
     "satori": "^0.26.0",
     "viem": "2.22.12"
   },
+  "optionalDependencies": {
+    "@xmtp/node-sdk-lowglibc": "npm:@xmtp/node-sdk@6.1.0-nightly.20260617.1e1a195"
+  },
   "devDependencies": {
     "@types/node": "^22.13.0",
     "@types/react": "^19.2.14",

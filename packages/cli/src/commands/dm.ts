@@ -13,6 +13,10 @@ import {
   resolveHandleToAddress,
 } from "../messaging/uapi.js";
 import {
+  isNativeBindingError,
+  nativeBindingErrorHelp,
+} from "../messaging/native-binding.js";
+import {
   NewConversationDeniedError,
   listConversations,
   listRequests,
@@ -72,15 +76,34 @@ const resolveClient = async (json: boolean): Promise<ResolvedClient> => {
   // Imported lazily so the XMTP native binding (@xmtp/node-bindings, loaded by
   // client.js) is only required when a dm subcommand actually runs — not at CLI
   // startup. Keeps `zora --help` and every non-dm command working without it.
-  const { createMessagingClient } = await import("../messaging/client.js");
-  const client = await createMessagingClient(auth.signerSpec, {
-    // Register the CLI installation with the Zora backend so it shows up in the
-    // user's device list and counts against the install cap. Best-effort — see
-    // client.ts. (The smart-wallet auth layer always provides a token.)
-    registerInstallation: token
-      ? (installationId) => registerXmtpInstallation(installationId, token)
-      : undefined,
-  });
+  //
+  // The import itself triggers the native binding load, so it — and the
+  // createMessagingClient call that uses it — are the two places a binding-load
+  // failure surfaces. On common LTS Linux servers (Ubuntu 22.04, Debian 12, many
+  // GCP/VPS images) the prebuilt binding's glibc is too new and dlopen fails with
+  // a cryptic, nested "cannot find native binding" error. Catch it and explain
+  // how to run DMs instead of crashing with a stack trace. See native-binding.ts.
+  let client: MessagingClient;
+  try {
+    const { createMessagingClient } = await import("../messaging/client.js");
+    client = await createMessagingClient(auth.signerSpec, {
+      // Register the CLI installation with the Zora backend so it shows up in the
+      // user's device list and counts against the install cap. Best-effort — see
+      // client.ts. (The smart-wallet auth layer always provides a token.)
+      registerInstallation: token
+        ? (installationId) => registerXmtpInstallation(installationId, token)
+        : undefined,
+    });
+  } catch (err) {
+    if (isNativeBindingError(err)) {
+      return outputErrorAndExit(
+        json,
+        "DMs aren't available in this environment.",
+        nativeBindingErrorHelp(),
+      );
+    }
+    throw err;
+  }
   return { client, token };
 };
 
@@ -466,9 +489,7 @@ dmCommand
             ? sanitizeMessageText(msg.text)
             : `[${msg.contentType}]`;
           const [first = "", ...rest] = body.split("\n");
-          console.log(
-            `← ${who} ${dim(formatAge(msg.sentAtMs))}\n  ${first}`,
-          );
+          console.log(`← ${who} ${dim(formatAge(msg.sentAtMs))}\n  ${first}`);
           for (const line of rest) console.log(`  ${line}`);
         }
       }
