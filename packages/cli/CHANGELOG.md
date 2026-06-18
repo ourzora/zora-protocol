@@ -1,4 +1,35 @@
-# @zoralabs/cli 
+# @zoralabs/cli
+
+## 1.4.1
+
+### Patch Changes
+
+- e9468e482: Install skills from the CLI bundle instead of fetching them over the network
+
+  Skills are now embedded in the published CLI and written to disk on `skills add`, rather than fetched from `agents.zora.com`. This removes the unverified remote-fetch surface (a compromised host or MITM could previously serve poisoned skill instructions) and the version drift that caused installs to fail whenever server-side skill content changed. The installed content is exactly the reviewed source at the commit the CLI was built from.
+
+  Installing any strategy skill now also installs the core `zora-cli` skill it depends on, and skills no longer fetch the core skill at runtime. The `--skip-verify` flag and the `ZORA_SKILLS_BASE_URL` override are removed, as there is no longer a download to verify or redirect.
+
+- c336f44b3: Fix `zora dm` not working on common Linux servers (glibc too old)
+
+  DMs use a native module whose default prebuilt Linux binary requires glibc 2.38 —
+  newer than Ubuntu 22.04, Debian 12, the default node:20/22/24 images, and many
+  GCP/VPS hosts. On those systems `zora dm` crashed with a cryptic, misleading error.
+
+  The CLI now selects the right XMTP build for the host at runtime: the default SDK
+  on musl (Alpine), macOS, Windows, and recent glibc, and a matched low-glibc build
+  on older-glibc Linux. DMs work out of the box on musl/macOS/Windows/new-glibc at
+  any Node version, and on older-glibc Linux when running **Node 22+** (the low-glibc
+  build requires Node 22+). When the low-glibc build can't be used — Node 20 on old
+  glibc, or the build is unavailable — the CLI shows a clear, actionable message
+  (run on Alpine, use Node 22+, or a glibc ≥ 2.38 image) instead of crashing.
+
+- 0b5a55622: Correct the bundled agent skills and CLI skill to match shipped CLI behavior
+  - `agent create` mints the creator coin by default, opting out with `--skip-coin`. The onboarding skill and the core CLI skill no longer reference a `--with-coin` flag (which does not exist), so an agent following onboarding no longer hits an unknown-option error.
+  - Fixed JSON field names several strategy skills read: `get trades` returns `type`/`valueUsd` (not `side`/`amountUsd`), `balance` coin entries expose a lowercase `type` category (`creator-coin`/`post`/`trend`) alongside the raw `coinType` enum, and `get holders` paginates via a top-level `nextCursor`/`totalHolders`.
+  - Removed a `get price-history` call from the trend-sniper skill that returns no volume; 24h volume now comes from `get <address>` (`volume24h`).
+  - Tightened the onboarding skill's image-selection criteria (PFP and first-post image) into single at-a-glance checklists, removing the repeated "first acceptable wins / time-box" guidance that led agents to over-deliberate while judging candidates. Cuts the image-judgment guidance roughly in half with no change to the actual acceptance rules.
+  - Updated the core CLI skill to reference the CLI's bundled skills (`skills add <name>`) instead of fetching skill markdown from `agents.zora.com` at runtime. Skills install from disk with no remote fetch, so an agent acquires the exact reviewed bytes for its CLI version rather than trusting a live, mutable endpoint — closing the remote-fetch surface from the agent's everyday-use path (consistent with the bundled-skills model).
 
 ## 1.4.0
 
@@ -287,7 +318,7 @@
 
 ### Patch Changes
 
-- 01584e8b: Release the CLI prerelease only
+- 01584e8b: Release the CLI prerelease only 
 
 ## 0.2.0-cli-dev.0
 
