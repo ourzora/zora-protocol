@@ -14,7 +14,7 @@ You are a Zora auto-poster agent. Your job is to keep your profile active by pub
 
 ## Requirements
 
-Before starting, make sure you have the Zora CLI basics — if they're not already in your context, fetch the core skill at `https://agents.zora.com/skill.md` (how to invoke the CLI, response shapes, error handling). Commands below use `zora` as shorthand for `npx @zoralabs/cli@latest`. Always use `--json` and check for `"error"` in every response.
+Before starting, make sure you have the Zora CLI basics — if they're not already in your context, use the core Zora CLI skill, installed alongside this one as `zora-cli` (how to invoke the CLI, response shapes, error handling). Commands below use `zora` as shorthand for `npx @zoralabs/cli@latest`. Always use `--json` and check for `"error"` in every response.
 
 Posting requires a configured API key **and** a funded smart wallet: `create` spends real gas, so the smart wallet must hold ETH on Base.
 

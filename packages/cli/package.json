@@ -15,8 +15,10 @@
   },
   "scripts": {
     "postinstall": "node scripts/postinstall.mjs",
-    "build": "pnpm run patch:xmtp-binding && tsup",
-    "build:js": "pnpm run patch:xmtp-binding && tsup",
+    "generate:skills": "node scripts/generate-skill-content.mjs",
+    "generate:skills:check": "node scripts/generate-skill-content.mjs --check",
+    "build": "pnpm run generate:skills && pnpm run patch:xmtp-binding && tsup",
+    "build:js": "pnpm run generate:skills && pnpm run patch:xmtp-binding && tsup",
     "check": "tsc --noEmit",
     "zora": "tsx src/index.tsx",
     "test": "vitest run",
@@ -26,13 +28,13 @@
     "gen:card-fonts": "python3 scripts/gen-card-fonts.py",
     "gen:card-wasm": "node scripts/gen-card-wasm.mjs",
     "gen:card-assets": "pnpm run gen:card-fonts && pnpm run gen:card-wasm",
-    "build:binary": "pnpm run patch:xmtp-binding && V=$(node -p \"require('./package.json').version\") && bun build ./src/index.tsx --compile --define \"PKG_VERSION=\\\"$V\\\"\" --outfile ./bin/zora",
+    "build:binary": "pnpm run generate:skills && pnpm run patch:xmtp-binding && V=$(node -p \"require('./package.json').version\") && bun build ./src/index.tsx --compile --define \"PKG_VERSION=\\\"$V\\\"\" --outfile ./bin/zora",
     "build:binary:all": "pnpm run build:binary:mac-arm64 && pnpm run build:binary:mac-x64 && pnpm run build:binary:linux-x64 && pnpm run build:binary:linux-arm64 && pnpm run build:binary:windows-x64",
-    "build:binary:mac-arm64": "pnpm run patch:xmtp-binding && V=$(node -p \"require('./package.json').version\") && bun build ./src/index.tsx --compile --target=bun-darwin-arm64 --define \"PKG_VERSION=\\\"$V\\\"\" --outfile ./bin/zora-darwin-arm64",
-    "build:binary:mac-x64": "pnpm run patch:xmtp-binding && V=$(node -p \"require('./package.json').version\") && bun build ./src/index.tsx --compile --target=bun-darwin-x64 --define \"PKG_VERSION=\\\"$V\\\"\" --outfile ./bin/zora-darwin-x64",
-    "build:binary:linux-x64": "V=$(node -p \"require('./package.json').version\") && bun build ./src/index.tsx --compile --target=bun-linux-x64 --define \"PKG_VERSION=\\\"$V\\\"\" --outfile ./bin/zora-linux-x64",
-    "build:binary:linux-arm64": "V=$(node -p \"require('./package.json').version\") && bun build ./src/index.tsx --compile --target=bun-linux-arm64 --define \"PKG_VERSION=\\\"$V\\\"\" --outfile ./bin/zora-linux-arm64",
-    "build:binary:windows-x64": "V=$(node -p \"require('./package.json').version\") && bun build ./src/index.tsx --compile --target=bun-windows-x64 --define \"PKG_VERSION=\\\"$V\\\"\" --outfile ./bin/zora-windows-x64.exe"
+    "build:binary:mac-arm64": "pnpm run generate:skills && pnpm run patch:xmtp-binding && V=$(node -p \"require('./package.json').version\") && bun build ./src/index.tsx --compile --target=bun-darwin-arm64 --define \"PKG_VERSION=\\\"$V\\\"\" --outfile ./bin/zora-darwin-arm64",
+    "build:binary:mac-x64": "pnpm run generate:skills && pnpm run patch:xmtp-binding && V=$(node -p \"require('./package.json').version\") && bun build ./src/index.tsx --compile --target=bun-darwin-x64 --define \"PKG_VERSION=\\\"$V\\\"\" --outfile ./bin/zora-darwin-x64",
+    "build:binary:linux-x64": "pnpm run generate:skills && V=$(node -p \"require('./package.json').version\") && bun build ./src/index.tsx --compile --target=bun-linux-x64 --define \"PKG_VERSION=\\\"$V\\\"\" --outfile ./bin/zora-linux-x64",
+    "build:binary:linux-arm64": "pnpm run generate:skills && V=$(node -p \"require('./package.json').version\") && bun build ./src/index.tsx --compile --target=bun-linux-arm64 --define \"PKG_VERSION=\\\"$V\\\"\" --outfile ./bin/zora-linux-arm64",
+    "build:binary:windows-x64": "pnpm run generate:skills && V=$(node -p \"require('./package.json').version\") && bun build ./src/index.tsx --compile --target=bun-windows-x64 --define \"PKG_VERSION=\\\"$V\\\"\" --outfile ./bin/zora-windows-x64.exe"
   },
   "dependencies": {
     "@inkjs/ui": "^2.0.0",

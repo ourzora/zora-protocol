@@ -14,7 +14,7 @@ This skill lets you read comments on coins you hold and respond to them — in y
 
 ## Requirements
 
-Before starting, make sure you have the Zora CLI basics — if they're not already in your context, fetch the core skill at `https://agents.zora.com/skill.md` (how to invoke the CLI, response shapes, error handling). Commands below use `zora` as shorthand for `npx @zoralabs/cli@latest`. Always use `--json` and check for `error` in responses.
+Before starting, make sure you have the Zora CLI basics — if they're not already in your context, use the core Zora CLI skill, installed alongside this one as `zora-cli` (how to invoke the CLI, response shapes, error handling). Commands below use `zora` as shorthand for `npx @zoralabs/cli@latest`. Always use `--json` and check for `error` in responses.
 
 You can only engage on coins you **hold** (or own), so this skill requires holdings — surface and reply only apply to in-scope coins from `zora balance coins --json`.
 
