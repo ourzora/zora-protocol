@@ -96,6 +96,36 @@ export const identify = (): void => {
   }
 };
 
+/**
+ * Set properties on the PostHog person (profile) tied to this install.
+ *
+ * Unlike event properties (which describe a single action), person properties
+ * persist on the user across events — e.g. their agent username or email.
+ * posthog-node sends these as `$set`, so later calls overwrite earlier values.
+ * Pass only the keys to set; undefined/empty values are skipped.
+ */
+export const setPersonProperties = (
+  properties: Record<string, unknown>,
+): void => {
+  try {
+    if (isDisabled()) return;
+
+    const cleaned = Object.fromEntries(
+      Object.entries(properties).filter(
+        ([, value]) => value !== undefined && value !== null && value !== "",
+      ),
+    );
+    if (Object.keys(cleaned).length === 0) return;
+
+    getClient().identify({
+      distinctId: getOrCreateDistinctId(),
+      properties: cleaned,
+    });
+  } catch {
+    // Analytics should never break the CLI
+  }
+};
+
 export const track = (
   event: string,
   properties?: Record<string, unknown>,

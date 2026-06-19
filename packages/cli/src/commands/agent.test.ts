@@ -70,7 +70,10 @@ vi.mock("../lib/agent/update-profile.js", () => ({
   updateAgentProfile: vi.fn(),
 }));
 
-vi.mock("../lib/analytics.js", () => ({ track: vi.fn() }));
+vi.mock("../lib/analytics.js", () => ({
+  track: vi.fn(),
+  setPersonProperties: vi.fn(),
+}));
 
 vi.mock("viem/accounts", () => ({
   generatePrivateKey: vi.fn(() => `0x${"1".repeat(64)}`),
