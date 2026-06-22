@@ -1,5 +1,16 @@
 # @zoralabs/cli
 
+## 1.4.2
+
+### Patch Changes
+
+- a32a1fc27: Identify users in product analytics by their agent username and email
+
+  When an agent is created or its username is updated, the username is recorded as the `name` person property, and when an email is linked it is recorded as the `email` person property. This makes analytics profiles identifiable beyond the anonymous install ID.
+
+- 60d12e3ae: Add error details to failure events for increased visibility into failures
+- 7fafbdac2: Add wallet addresses to posthog events for easier failure debugging 
+
 ## 1.4.1
 
 ### Patch Changes
@@ -318,7 +329,7 @@
 
 ### Patch Changes
 
-- 01584e8b: Release the CLI prerelease only 
+- 01584e8b: Release the CLI prerelease only
 
 ## 0.2.0-cli-dev.0
 
