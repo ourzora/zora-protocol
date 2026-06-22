@@ -3,7 +3,7 @@ import { Command } from "commander";
 import { erc20Abi, isAddress, type Address } from "viem";
 import { shutdownAnalytics, track } from "../lib/analytics.js";
 import { getApiKey, getPrivateKey } from "../lib/config.js";
-import { formatError } from "../lib/errors.js";
+import { formatError, serializeError } from "../lib/errors.js";
 import {
   followProfile,
   unfollowProfile,
@@ -180,6 +180,7 @@ async function runFollow(
       output_format: json ? "json" : "static",
       success: false,
       error_type: err instanceof Error ? err.constructor.name : "unknown",
+      error: serializeError(err),
     });
     await shutdownAnalytics();
     const message = formatError(err);

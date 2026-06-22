@@ -229,6 +229,115 @@ export function extractErrorMessage(error: unknown): string {
   return JSON.stringify(error);
 }
 
+/** A plain object safe to JSON.stringify and send over the wire. */
+export type SerializableValue =
+  | string
+  | number
+  | boolean
+  | null
+  | SerializableValue[]
+  | { [key: string]: SerializableValue };
+
+const MAX_SERIALIZE_DEPTH = 6;
+
+/**
+ * Convert an arbitrary value into a plain, JSON-serializable structure.
+ *
+ * - Drops cyclic references (replaced with "[Circular]").
+ * - Reads through getters defensively; a throwing getter becomes "[Unserializable: ...]".
+ * - Coerces non-JSON primitives (BigInt, Symbol, undefined, functions) into strings or drops them.
+ * - Bounds recursion depth to avoid pathological/very deep structures.
+ *
+ * The result contains only string keys and JSON-serializable values — no live
+ * getters, prototypes, or class instances survive.
+ */
+function toSerializable(
+  value: unknown,
+  seen: WeakSet<object>,
+  depth: number,
+): SerializableValue {
+  if (value === null) return null;
+
+  const type = typeof value;
+  if (type === "string" || type === "boolean") {
+    return value as string | boolean;
+  }
+  if (type === "number") {
+    // NaN/Infinity are not valid JSON — coerce to null like JSON.stringify does.
+    return Number.isFinite(value as number) ? (value as number) : null;
+  }
+  if (type === "bigint") return (value as bigint).toString();
+  if (type === "undefined" || type === "function" || type === "symbol") {
+    // These have no JSON representation; callers strip them out at the object level.
+    return null;
+  }
+
+  // Objects from here down.
+  const obj = value as object;
+
+  if (seen.has(obj)) return "[Circular]";
+  if (depth >= MAX_SERIALIZE_DEPTH) return "[MaxDepth]";
+
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value.toISOString();
+  }
+
+  seen.add(obj);
+  try {
+    if (Array.isArray(value)) {
+      return value.map((item) => toSerializable(item, seen, depth + 1));
+    }
+
+    // Errors don't expose name/message/stack as own enumerable props, so pull
+    // them explicitly before walking the remaining own enumerable keys.
+    const result: { [key: string]: SerializableValue } = {};
+    if (value instanceof Error) {
+      result.name = value.name;
+      result.message = value.message;
+      if (value.stack) result.stack = value.stack;
+    }
+
+    for (const key of Object.keys(value as Record<string, unknown>)) {
+      if (key in result) continue;
+      let raw: unknown;
+      try {
+        raw = (value as Record<string, unknown>)[key];
+      } catch (getterError) {
+        result[key] =
+          `[Unserializable: ${getterError instanceof Error ? getterError.message : String(getterError)}]`;
+        continue;
+      }
+      // Skip keys that carry no JSON value rather than emitting nulls for them.
+      const t = typeof raw;
+      if (t === "undefined" || t === "function" || t === "symbol") continue;
+      result[key] = toSerializable(raw, seen, depth + 1);
+    }
+    return result;
+  } finally {
+    seen.delete(obj);
+  }
+}
+
+/**
+ * Build a plain, JSON-serializable object from an error (or any unknown value)
+ * suitable for sending in an HTTP POST body.
+ *
+ * Guarantees: no cyclic references, no live getters, only string keys and
+ * JSON-serializable values. Always returns an object (primitives are wrapped
+ * under a `message` key) so the payload shape is predictable for consumers.
+ */
+export function serializeError(err: unknown): {
+  [key: string]: SerializableValue;
+} {
+  const serialized = toSerializable(err, new WeakSet(), 0);
+  if (serialized !== null && typeof serialized === "object") {
+    if (Array.isArray(serialized)) return { value: serialized };
+    return serialized;
+  }
+  // Primitive (string/number/bool/null) — wrap so the payload is always an object.
+  return { message: serialized === null ? String(err) : serialized };
+}
+
 export function bannedCoinMessage(address: string): string {
   return `The coin at ${address} is unavailable because it violates the Zora terms of service.`;
 }

@@ -31,7 +31,7 @@ import {
 } from "../lib/comments.js";
 import { getApiKey } from "../lib/config.js";
 import { BASE_CHAIN_ID } from "../lib/constants.js";
-import { apiErrorMessage } from "../lib/errors.js";
+import { apiErrorMessage, serializeError } from "../lib/errors.js";
 import { ERROR, safeExit, SUCCESS } from "../lib/exit.js";
 import { formatRelativeTime, truncateAddress } from "../lib/format.js";
 import { gasErrorSuggestion } from "../lib/gas.js";
@@ -345,6 +345,7 @@ export const commentCommand = new Command("comment")
         output_format: json ? "json" : "static",
         success: false,
         error_type: err instanceof Error ? err.constructor.name : "unknown",
+        error: serializeError(err),
       });
       await shutdownAnalytics();
       const rawMessage = err instanceof Error ? err.message : String(err);

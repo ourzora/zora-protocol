@@ -34,7 +34,7 @@ import {
   WETH_ADDRESS,
   type TradeTokenKey,
 } from "../lib/constants.js";
-import { bannedProfileMessage } from "../lib/errors.js";
+import { bannedProfileMessage, serializeError } from "../lib/errors.js";
 import { safeExit, SUCCESS } from "../lib/exit.js";
 import { formatAmountDisplay } from "../lib/format.js";
 import { gasErrorSuggestion } from "../lib/gas.js";
@@ -470,6 +470,7 @@ export const sendCommand = new Command("send")
           output_format: json ? "json" : "static",
           success: false,
           error_type: err instanceof Error ? err.constructor.name : "unknown",
+          error: serializeError(err),
         });
         await shutdownAnalytics();
         return outputErrorAndExit(
@@ -783,6 +784,7 @@ export const sendCommand = new Command("send")
           output_format: json ? "json" : "static",
           success: false,
           error_type: err instanceof Error ? err.constructor.name : "unknown",
+          error: serializeError(err),
         });
         await shutdownAnalytics();
         return outputErrorAndExit(
