@@ -17,7 +17,7 @@ import { createPrivateKeyAccount, type PrivateKeyAccount } from "./wallet.js";
 export { normalizeKey } from "./wallet.js";
 export type { PrivateKeyAccount, SmartWalletAccount };
 
-const resolvePrivateKey = () => {
+export const resolvePrivateKey = () => {
   // fallback to private key from config file if env var is not set
   const privateKey = process.env.ZORA_PRIVATE_KEY || getPrivateKey();
 
@@ -28,7 +28,7 @@ const resolvePrivateKey = () => {
   return privateKey;
 };
 
-const resolveSmartWalletAddress = () => {
+export const resolveSmartWalletAddress = () => {
   // fallback to smart wallet address from config file if env var is not set
   const smartWalletAddress =
     (process.env.ZORA_SMART_WALLET_ADDRESS as Address | undefined) ||
