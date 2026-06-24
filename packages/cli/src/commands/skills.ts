@@ -1,9 +1,15 @@
 import { Command } from "commander";
-import { writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { writeFileSync, mkdirSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { getJson, outputData, outputErrorAndExit } from "../lib/output.js";
 import { track } from "../lib/analytics.js";
 import { SKILL_CONTENT } from "../generated/skill-content.js";
+import {
+  AGENT_HARNESS_ORDER,
+  AGENT_HARNESS_SKILLS_DIRS,
+  type AgentHarness,
+  detectAgentHarness,
+} from "../lib/agent-harness.js";
 
 export type SkillMeta = {
   name: string;
@@ -125,45 +131,12 @@ export const SKILLS: SkillMeta[] = [
   },
 ];
 
-type Agent = "claude" | "cursor" | "windsurf" | "openclaw" | "hermes";
-
-const AGENT_ORDER: Agent[] = [
-  "claude",
-  "cursor",
-  "windsurf",
-  "openclaw",
-  "hermes",
-];
-
 // Each skill installs as its own folder containing a SKILL.md:
 //   <skills-dir>/zora-<name>/SKILL.md
 // The folder name is what the harness uses as the command (e.g. /zora-onboarding),
 // so the zora- prefix namespaces the install. Loose .md files and grouping subfolders
 // are NOT discovered by Claude Code — one folder per skill, file named SKILL.md.
 const SKILL_PREFIX = "zora-";
-
-const AGENT_SKILLS_DIRS: Record<Agent, string> = {
-  claude: ".claude/skills",
-  cursor: ".cursor/skills",
-  windsurf: ".windsurf/skills",
-  openclaw: ".openclaw/skills",
-  hermes: ".hermes/skills",
-};
-
-const AGENT_ROOT_DIRS: Record<Agent, string> = {
-  claude: ".claude",
-  cursor: ".cursor",
-  windsurf: ".windsurf",
-  openclaw: ".openclaw",
-  hermes: ".hermes",
-};
-
-const detectAgent = (cwd: string): Agent | null => {
-  for (const agent of AGENT_ORDER) {
-    if (existsSync(join(cwd, AGENT_ROOT_DIRS[agent]))) return agent;
-  }
-  return null;
-};
 
 const getSkillContent = (name: string): string => {
   const content = SKILL_CONTENT[name];
@@ -229,7 +202,7 @@ skillsCommand
     const json = getJson(this);
     const opts = this.opts();
     const installAll = opts.all === true;
-    const agentFlag = opts.agent as Agent | undefined;
+    const agentFlag = opts.agent as AgentHarness | undefined;
     const dirFlag = opts.dir as string | undefined;
 
     if (!installAll && !name) {
@@ -248,24 +221,24 @@ skillsCommand
     }
 
     let outDir: string;
-    let resolvedAgent: Agent | "custom" | null = null;
+    let resolvedAgent: AgentHarness | "custom" | null = null;
     if (dirFlag) {
       outDir = resolve(dirFlag);
       resolvedAgent = "custom";
     } else if (agentFlag) {
-      if (!AGENT_SKILLS_DIRS[agentFlag]) {
+      if (!AGENT_HARNESS_SKILLS_DIRS[agentFlag]) {
         return outputErrorAndExit(
           json,
           `Unknown agent: ${agentFlag}`,
-          `Supported: ${AGENT_ORDER.join(", ")}`,
+          `Supported: ${AGENT_HARNESS_ORDER.join(", ")}`,
         );
       }
-      outDir = resolve(process.cwd(), AGENT_SKILLS_DIRS[agentFlag]);
+      outDir = resolve(process.cwd(), AGENT_HARNESS_SKILLS_DIRS[agentFlag]);
       resolvedAgent = agentFlag;
     } else {
-      const detected = detectAgent(process.cwd());
+      const detected = detectAgentHarness(process.cwd());
       resolvedAgent = detected ?? "claude";
-      outDir = resolve(process.cwd(), AGENT_SKILLS_DIRS[resolvedAgent]);
+      outDir = resolve(process.cwd(), AGENT_HARNESS_SKILLS_DIRS[resolvedAgent]);
     }
 
     const requested = installAll ? SKILLS.map((s) => s.name) : [name!];

@@ -289,6 +289,21 @@ describe("onboardAgent", () => {
     expect(ipfsUpload).not.toHaveBeenCalled();
   });
 
+  it("updates the profile when only the agent harness is present", async () => {
+    await onboardAgent({
+      privateKey: PK,
+      sleep: noSleep,
+      agentHarness: "claude",
+    });
+    expect(updateAgentProfile).toHaveBeenCalledTimes(1);
+    expect(updateAgentProfile).toHaveBeenCalledWith("tok", {
+      username: undefined,
+      bio: undefined,
+      agentHarness: "CLAUDE",
+    });
+    expect(ipfsUpload).not.toHaveBeenCalled();
+  });
+
   it("applies a chosen username + bio, and downstream URLs use the new handle", async () => {
     vi.mocked(updateAgentProfile).mockResolvedValue({
       username: "agent_smith",

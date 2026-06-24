@@ -1,6 +1,7 @@
 import { createPublicClient, http, type Address } from "viem";
 import { base } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
+import { mapAgentHarnessToUapi, type AgentHarness } from "../agent-harness.js";
 import { findEmbeddedWallet } from "../privy.js";
 import {
   ensurePrivySession,
@@ -32,6 +33,8 @@ export interface OnboardOptions {
   appId?: string;
   origin?: string;
   chainId?: number;
+  /** Local agent harness detected from the working directory, when present. */
+  agentHarness?: AgentHarness;
   /** Base RPC URL (defaults to the public endpoint). */
   rpcUrl?: string;
   /** Simulate the coin + post instead of minting them. */
@@ -182,12 +185,14 @@ export async function onboardAgent(
   if (
     opts.username !== undefined ||
     opts.bio !== undefined ||
-    opts.avatar !== undefined
+    opts.avatar !== undefined ||
+    opts.agentHarness !== undefined
   ) {
     const chosen = [
       opts.username !== undefined ? "username" : undefined,
       opts.bio !== undefined ? "bio" : undefined,
       opts.avatar ? "avatar" : undefined,
+      opts.agentHarness !== undefined ? "agent harness" : undefined,
     ].filter((field): field is string => field !== undefined);
     progress(
       "profile",
@@ -197,10 +202,17 @@ export async function onboardAgent(
     // Apply the text fields (username / bio) first: it's a cheap call that also
     // validates the username's availability, so a taken handle fails here —
     // before the (potentially slow) IPFS avatar upload runs.
-    if (opts.username !== undefined || opts.bio !== undefined) {
+    if (
+      opts.username !== undefined ||
+      opts.bio !== undefined ||
+      opts.agentHarness !== undefined
+    ) {
       profile = await updateAgentProfile(session.accessToken, {
         username: opts.username,
         bio: opts.bio,
+        ...(opts.agentHarness
+          ? { agentHarness: mapAgentHarnessToUapi(opts.agentHarness) }
+          : {}),
       });
     }
     // Then upload and apply the avatar.

@@ -43,6 +43,7 @@ import { inputOrFail } from "../lib/prompt.js";
 import { validateTicker } from "../lib/ticker.js";
 import { onboardAgent, createAgentCoin } from "../lib/agent/onboard.js";
 import { updateAgentProfile } from "../lib/agent/update-profile.js";
+import { detectAgentHarness } from "../lib/agent-harness.js";
 import {
   loadAvatar,
   loadImageFile,
@@ -358,6 +359,7 @@ agentCommand
         appId: options.appId,
         origin: options.origin,
         chainId,
+        agentHarness: detectAgentHarness(process.cwd()),
         rpcUrl: options.rpcUrl,
         dryRun: Boolean(options.dryRun),
         skipCoin: Boolean(options.skipCoin),
