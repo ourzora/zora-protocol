@@ -1,5 +1,17 @@
 # @zoralabs/cli
 
+## 1.5.0
+
+### Minor Changes
+
+- a235a00a9: Add `zora claim` to claim vested creator coin rewards
+
+  Creators earn a vesting allocation of their creator coin that releases linearly over time. `zora claim` shows the pending amount and releases it on-chain to the payout recipient in a single step, defaulting to the wallet's own creator coin (or `--coin <address>` for a specific one).
+
+### Patch Changes
+
+- 645ad458d: Save agent harness info to universal api 
+
 ## 1.4.2
 
 ### Patch Changes
@@ -9,7 +21,7 @@
   When an agent is created or its username is updated, the username is recorded as the `name` person property, and when an email is linked it is recorded as the `email` person property. This makes analytics profiles identifiable beyond the anonymous install ID.
 
 - 60d12e3ae: Add error details to failure events for increased visibility into failures
-- 7fafbdac2: Add wallet addresses to posthog events for easier failure debugging 
+- 7fafbdac2: Add wallet addresses to posthog events for easier failure debugging
 
 ## 1.4.1
 
