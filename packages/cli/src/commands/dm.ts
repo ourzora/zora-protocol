@@ -3,7 +3,11 @@ import { isAddress, type Address } from "viem";
 import { getJson, outputData, outputErrorAndExit } from "../lib/output.js";
 import { getPrivateKey } from "../lib/config.js";
 import { normalizeKey } from "../lib/wallet.js";
-import { formatError, bannedProfileMessage } from "../lib/errors.js";
+import {
+  formatError,
+  bannedProfileMessage,
+  serializeError,
+} from "../lib/errors.js";
 import { track } from "../lib/analytics.js";
 import { createSmartWalletAuth } from "../messaging/identity.js";
 import { createCliSmartWalletProvider } from "../messaging/cli-auth-provider.js";
@@ -414,6 +418,7 @@ dmCommand
           output_format: json ? "json" : "text",
           success: false,
           denied: true,
+          error: serializeError(err),
         });
         return outputErrorAndExit(
           json,

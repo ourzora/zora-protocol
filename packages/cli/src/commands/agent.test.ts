@@ -20,6 +20,7 @@ import {
 import { inputOrFail } from "../lib/prompt.js";
 import { loadAvatar } from "../lib/agent/avatar.js";
 import { updateAgentProfile } from "../lib/agent/update-profile.js";
+import { detectAgentHarness } from "../lib/agent-harness.js";
 
 vi.mock("../lib/agent/onboard.js", () => ({
   onboardAgent: vi.fn(),
@@ -70,7 +71,14 @@ vi.mock("../lib/agent/update-profile.js", () => ({
   updateAgentProfile: vi.fn(),
 }));
 
-vi.mock("../lib/analytics.js", () => ({ track: vi.fn() }));
+vi.mock("../lib/agent-harness.js", () => ({
+  detectAgentHarness: vi.fn(),
+}));
+
+vi.mock("../lib/analytics.js", () => ({
+  track: vi.fn(),
+  setPersonProperties: vi.fn(),
+}));
 
 vi.mock("viem/accounts", () => ({
   generatePrivateKey: vi.fn(() => `0x${"1".repeat(64)}`),
@@ -153,6 +161,7 @@ describe("zora agent create", () => {
     delete process.env.ZORA_PRIVATE_KEY;
     vi.mocked(getPrivateKey).mockReturnValue(SAVED_PK);
     vi.mocked(onboardAgent).mockResolvedValue(ONBOARD_RESULT);
+    vi.mocked(detectAgentHarness).mockReturnValue(undefined);
   });
 
   afterEach(() => {
@@ -204,6 +213,18 @@ describe("zora agent create", () => {
         skipCoin: true,
         skipPost: true,
         rpcUrl: "https://rpc.test",
+      }),
+    );
+  });
+
+  it("passes the detected agent harness into onboarding", async () => {
+    vi.mocked(detectAgentHarness).mockReturnValue("cursor");
+
+    await runAgent(["create", "--json"]);
+
+    expect(onboardAgent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        agentHarness: "cursor",
       }),
     );
   });

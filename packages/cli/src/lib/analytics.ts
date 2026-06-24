@@ -1,14 +1,14 @@
-import { PostHog } from "posthog-node";
 import { createHash, randomUUID } from "node:crypto";
-import { privateKeyToAccount } from "viem/accounts";
+import { PostHog } from "posthog-node";
+import { Address, privateKeyToAccount } from "viem/accounts";
 import {
-  getAnalyticsId,
-  getApiKey,
-  getPrivateKey,
-  saveAnalyticsId,
-} from "./config.js";
+  resolvePrivateKey,
+  resolveSmartWalletAddress,
+} from "./account/index.js";
+import { getAnalyticsId, getApiKey, saveAnalyticsId } from "./config.js";
 import { POSTHOG_HOST, POSTHOG_TOKEN } from "./constants.js";
 import { normalizeKey } from "./wallet.js";
+
 const SHUTDOWN_TIMEOUT_MS = 2000;
 
 declare const PKG_VERSION: string | undefined;
@@ -48,26 +48,41 @@ const getClient = (): PostHog => {
   return client;
 };
 
-const commonProperties = (): Record<string, unknown> => ({
-  cli_version: typeof PKG_VERSION !== "undefined" ? PKG_VERSION : "development",
-  os: process.platform,
-  arch: process.arch,
-  node_version: process.version,
-});
+const getWalletAddresses = () => {
+  const addresses = {
+    wallet: undefined as Address | undefined,
+    smartWallet: undefined as Address | undefined,
+  };
+  try {
+    const privateKey = resolvePrivateKey();
+    addresses.wallet = privateKeyToAccount(normalizeKey(privateKey)).address;
+  } catch {
+    addresses.wallet = undefined;
+  }
+  try {
+    const smartWalletAddress = resolveSmartWalletAddress();
+    addresses.smartWallet = smartWalletAddress;
+  } catch {
+    addresses.smartWallet = undefined;
+  }
+  return addresses;
+};
+
+const commonProperties = (): Record<string, unknown> => {
+  const addresses = getWalletAddresses();
+  return {
+    cli_version:
+      typeof PKG_VERSION !== "undefined" ? PKG_VERSION : "development",
+    os: process.platform,
+    arch: process.arch,
+    node_version: process.version,
+    wallet_address: addresses.wallet,
+    smart_wallet_address: addresses.smartWallet,
+  };
+};
 
 const hashApiKey = (key: string): string =>
   createHash("sha256").update(key).digest("hex").slice(0, 16);
-
-const getWalletAddress = (): string | undefined => {
-  try {
-    const key = process.env.ZORA_PRIVATE_KEY || getPrivateKey();
-    if (!key) return undefined;
-
-    return privateKeyToAccount(normalizeKey(key)).address;
-  } catch {
-    return undefined;
-  }
-};
 
 let identified = false;
 
@@ -78,9 +93,10 @@ export const identify = (): void => {
 
     const id = getOrCreateDistinctId();
     const apiKey = getApiKey();
-    const walletAddress = getWalletAddress();
+    const { wallet: walletAddress, smartWallet: smartWalletAddress } =
+      getWalletAddresses();
 
-    if (!apiKey && !walletAddress) {
+    if (!apiKey && !walletAddress && !smartWalletAddress) {
       return;
     }
 
@@ -89,7 +105,38 @@ export const identify = (): void => {
       properties: {
         api_key_hash: apiKey ? hashApiKey(apiKey) : undefined,
         wallet_address: walletAddress ?? undefined,
+        smart_wallet_address: smartWalletAddress ?? undefined,
       },
+    });
+  } catch {
+    // Analytics should never break the CLI
+  }
+};
+
+/**
+ * Set properties on the PostHog person (profile) tied to this install.
+ *
+ * Unlike event properties (which describe a single action), person properties
+ * persist on the user across events — e.g. their agent username or email.
+ * posthog-node sends these as `$set`, so later calls overwrite earlier values.
+ * Pass only the keys to set; undefined/empty values are skipped.
+ */
+export const setPersonProperties = (
+  properties: Record<string, unknown>,
+): void => {
+  try {
+    if (isDisabled()) return;
+
+    const cleaned = Object.fromEntries(
+      Object.entries(properties).filter(
+        ([, value]) => value !== undefined && value !== null && value !== "",
+      ),
+    );
+    if (Object.keys(cleaned).length === 0) return;
+
+    getClient().identify({
+      distinctId: getOrCreateDistinctId(),
+      properties: cleaned,
     });
   } catch {
     // Analytics should never break the CLI

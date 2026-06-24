@@ -22,6 +22,7 @@ import { safeExit, SUCCESS } from "../lib/exit.js";
 import { track, shutdownAnalytics } from "../lib/analytics.js";
 import { gasErrorSuggestion } from "../lib/gas.js";
 import { validateTicker } from "../lib/ticker.js";
+import { serializeError } from "../lib/errors.js";
 
 /** Image extensions accepted by the metadata uploader, mapped to their MIME type. */
 const IMAGE_MIME_BY_EXT: Record<string, string> = {
@@ -261,6 +262,8 @@ export const createCommand = new Command("create")
         success: false,
         stage: "upload",
         error_type: err instanceof Error ? err.constructor.name : "unknown",
+        error_message: err instanceof Error ? err.message : String(err),
+        error: serializeError(err),
       });
       await shutdownAnalytics();
       return outputErrorAndExit(
@@ -303,6 +306,8 @@ export const createCommand = new Command("create")
         success: false,
         stage: "deploy",
         error_type: err instanceof Error ? err.constructor.name : "unknown",
+        error_message: err instanceof Error ? err.message : String(err),
+        error: serializeError(err),
       });
       await shutdownAnalytics();
       return outputErrorAndExit(

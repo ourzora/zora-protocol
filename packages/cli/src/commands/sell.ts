@@ -26,7 +26,11 @@ import {
 } from "../lib/coin-ref.js";
 import { getApiKey } from "../lib/config.js";
 import { BASE_TRADE_TOKENS, type TradeTokenKey } from "../lib/constants.js";
-import { apiErrorMessage, tradeErrorMessage } from "../lib/errors.js";
+import {
+  apiErrorMessage,
+  serializeError,
+  tradeErrorMessage,
+} from "../lib/errors.js";
 import { ERROR, safeExit, SUCCESS } from "../lib/exit.js";
 import { formatAmountDisplay, formatUsd } from "../lib/format.js";
 import { getJson, outputErrorAndExit, outputJson } from "../lib/output.js";
@@ -607,6 +611,7 @@ export const sellCommand = new Command("sell")
         output_format: output,
         success: false,
         error_type: err instanceof Error ? err.constructor.name : "unknown",
+        error: serializeError(err),
       });
       await shutdownAnalytics();
       return outputErrorAndExit(

@@ -6,6 +6,7 @@ import { agentCommand } from "./commands/agent.js";
 import { authCommand } from "./commands/auth.js";
 import { balanceCommand } from "./commands/balance.js";
 import { buyCommand } from "./commands/buy.js";
+import { claimCommand } from "./commands/claim.js";
 import { commentCommand } from "./commands/comment.js";
 import { createCommand } from "./commands/create.js";
 import { dmCommand } from "./commands/dm.js";
@@ -90,6 +91,7 @@ const buildProgram = (): Command => {
   program.addCommand(authCommand);
   program.addCommand(balanceCommand);
   program.addCommand(buyCommand);
+  program.addCommand(claimCommand);
   program.addCommand(commentCommand);
   program.addCommand(createCommand);
   program.addCommand(dmCommand);

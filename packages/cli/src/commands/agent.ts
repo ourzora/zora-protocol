@@ -28,7 +28,7 @@ import {
   outputErrorAndExit,
 } from "../lib/output.js";
 import { confirmAgentAction } from "../lib/agent-guard.js";
-import { track } from "../lib/analytics.js";
+import { track, setPersonProperties } from "../lib/analytics.js";
 import { formatError } from "../lib/errors.js";
 import {
   ZORA_PRIVY_APP_ID,
@@ -43,6 +43,7 @@ import { inputOrFail } from "../lib/prompt.js";
 import { validateTicker } from "../lib/ticker.js";
 import { onboardAgent, createAgentCoin } from "../lib/agent/onboard.js";
 import { updateAgentProfile } from "../lib/agent/update-profile.js";
+import { detectAgentHarness } from "../lib/agent-harness.js";
 import {
   loadAvatar,
   loadImageFile,
@@ -358,6 +359,7 @@ agentCommand
         appId: options.appId,
         origin: options.origin,
         chainId,
+        agentHarness: detectAgentHarness(process.cwd()),
         rpcUrl: options.rpcUrl,
         dryRun: Boolean(options.dryRun),
         skipCoin: Boolean(options.skipCoin),
@@ -428,6 +430,10 @@ agentCommand
       set_ticker: options.ticker !== undefined,
       output_format: json ? "json" : "text",
     });
+
+    // Persist the agent's username as the `name` person property in PostHog so
+    // the profile is identifiable beyond the wallet/api-key hash.
+    setPersonProperties({ name: result.username });
 
     outputData(json, {
       json: {
@@ -757,6 +763,7 @@ agentCommand
         generated_wallet: resolved.generated,
         output_format: json ? "json" : "text",
       });
+      setPersonProperties({ email });
       return outputData(json, {
         json: {
           email,
@@ -866,6 +873,7 @@ agentCommand
       generated_wallet: resolved.generated,
       output_format: json ? "json" : "text",
     });
+    setPersonProperties({ email: result.email });
 
     outputData(json, {
       json: {
@@ -1022,6 +1030,11 @@ agentCommand
       updated_avatar: options.avatar !== undefined,
       output_format: json ? "json" : "text",
     });
+
+    // Keep the `name` person property in sync when the handle is renamed.
+    if (options.username !== undefined) {
+      setPersonProperties({ name: profile.username });
+    }
 
     const profileUrl = `https://zora.co/@${profile.username}`;
     outputData(json, {

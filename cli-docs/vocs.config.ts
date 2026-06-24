@@ -1,7 +1,12 @@
 import { defineConfig } from "vocs";
 import { Fragment, createElement } from "react";
 
-const OG_IMAGE = "/og.png";
+// X/Twitter requires an ABSOLUTE https URL for og:image / twitter:image — a
+// relative path renders elsewhere (Slack, opengraph.xyz) but not on X. Vocs
+// does not prepend a base URL, so build the absolute URL here. CI passes
+// VITE_SITE_ROOT_URL to `vercel build`; fall back to the canonical prod domain.
+const SITE_ROOT = process.env.VITE_SITE_ROOT_URL || "https://agents.zora.com";
+const OG_IMAGE = `${SITE_ROOT.replace(/\/$/, "")}/og.png`;
 
 const zoraLight = {
   name: "zora-light",
@@ -166,8 +171,8 @@ export default defineConfig({
     createElement(
       Fragment,
       null,
-      createElement("meta", { property: "og:image:width", content: "2400" }),
-      createElement("meta", { property: "og:image:height", content: "1280" }),
+      createElement("meta", { property: "og:image:width", content: "1200" }),
+      createElement("meta", { property: "og:image:height", content: "630" }),
     ),
   markdown: {
     code: {

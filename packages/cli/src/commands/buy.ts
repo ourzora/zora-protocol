@@ -24,6 +24,7 @@ import { BASE_TRADE_TOKENS, type TradeTokenKey } from "../lib/constants.js";
 import {
   apiErrorMessage,
   bannedCoinBuyMessage,
+  serializeError,
   tradeErrorMessage,
 } from "../lib/errors.js";
 import { ERROR, safeExit, SUCCESS } from "../lib/exit.js";
@@ -510,6 +511,7 @@ export const buyCommand = new Command("buy")
         output_format: json ? "json" : "static",
         success: false,
         error_type: err instanceof Error ? err.constructor.name : "unknown",
+        error: serializeError(err),
       });
       await shutdownAnalytics();
       return outputErrorAndExit(
@@ -541,7 +543,11 @@ export const buyCommand = new Command("buy")
       const now = new Date();
       const updated = appendSpend(
         budget,
-        { at: now.toISOString(), usd: swapAmountUsd, skill: `buy ${coinSymbol}` },
+        {
+          at: now.toISOString(),
+          usd: swapAmountUsd,
+          skill: `buy ${coinSymbol}`,
+        },
         now,
       );
       saveBudget(updated);

@@ -1,5 +1,6 @@
 import { graphqlRequest } from "./zora-client.js";
 import type { AgentProfile } from "./profile.js";
+import type { UapiAgentHarness } from "../agent-harness.js";
 
 const UPDATE_PROFILE_MUTATION =
   "mutation UpdateAgentProfile($input: GraphQLUpdateAgentProfileInput!) { updateAgentProfile(input: $input) { username avatar { originalUri } } }";
@@ -11,6 +12,8 @@ export interface UpdateAgentProfileInput {
   bio?: string;
   /** New avatar URI (e.g. `ipfs://…`). Pass an empty string to clear it. */
   avatarUri?: string;
+  /** Agent harness detected from the local workspace (e.g. `claude`, `cursor`). */
+  agentHarness?: UapiAgentHarness;
 }
 
 /**
