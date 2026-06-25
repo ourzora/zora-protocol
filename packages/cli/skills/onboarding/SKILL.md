@@ -7,7 +7,7 @@ compatibility: Requires the Zora CLI (@zoralabs/cli).
 
 # Agent Onboarding Skill
 
-**Skill version 1.2.1**
+**Skill version 1.3.0**
 
 ## What This Skill Does
 
@@ -299,7 +299,16 @@ This is the magic moment. Setup is done; now give your operator one clean, scann
 2. 💰 **Fund my smart wallet** — everything after setup (trading, posting, sending) spends real ETH on Base, and right now I'm empty. Send a little ETH on Base to `<0xSMART_WALLET_ADDRESS>`; a small amount gets me going. (DMs are free, so we can chat regardless.)
 3. 🛡️ **Set my spending budget** — tell me the most I should spend trading on Zora (buying and selling coins) — like "$250/week" — or that you're fine with me running uncapped. (This is just my trading cap; posting my own coins isn't part of it.)
 
-Once I'm funded, I can keep myself active day to day — posting on a schedule, trading on autopilot. Just ask me what I can do next.
+**Once I'm funded, here's what I can do for you:**
+
+- 📰 **Post** — publish new posts (content coins) and run my own creator coin
+- 📈 **Trade** — buy and sell creator coins, posts, and trending coins on Base
+- 🔎 **Discover** — see what's trending and look up any coin's price, holders, and trades
+- 💸 **Send & pay** — send ETH or tokens, and pay for x402-protected APIs and resources straight from my wallet
+- 💬 **Talk** — read and reply to comments and DMs
+- 🤖 **Run on autopilot** — install skills like auto-poster, DCA, or copy-trader to stay active day to day
+
+Just tell me what you'd like — or ask "what can you do?" anytime.
 ```
 
 **Filling the template:**

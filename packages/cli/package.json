@@ -1,6 +1,6 @@
 {
   "name": "@zoralabs/cli",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "Zora CLI tool",
   "type": "module",
   "bin": {
@@ -55,7 +55,10 @@
     "posthog-node": "^5.28.4",
     "react": "^19.2.4",
     "satori": "^0.26.0",
-    "viem": "2.22.12"
+    "viem": "2.53.1",
+    "@x402/core": "^2.16.0",
+    "@x402/evm": "^2.16.0",
+    "@x402/fetch": "^2.16.0"
   },
   "optionalDependencies": {
     "@xmtp/node-sdk-lowglibc": "npm:@xmtp/node-sdk@6.1.0-nightly.20260617.1e1a195"

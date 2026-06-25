@@ -13,6 +13,7 @@ import { dmCommand } from "./commands/dm.js";
 import { exploreCommand } from "./commands/explore.jsx";
 import { followCommand, unfollowCommand } from "./commands/follow.js";
 import { getCommand } from "./commands/get.jsx";
+import { payCommand } from "./commands/pay.js";
 import { sellCommand } from "./commands/sell.js";
 import { profileCommand } from "./commands/profile.js";
 import { sendCommand } from "./commands/send.js";
@@ -105,6 +106,7 @@ const buildProgram = (): Command => {
   program.addCommand(walletCommand);
   program.addCommand(sellCommand);
   program.addCommand(sendCommand);
+  program.addCommand(payCommand);
 
   // configureOutput is not inherited by subcommands, so apply it recursively.
   const applyToSubcommands = (parent: Command) => {
