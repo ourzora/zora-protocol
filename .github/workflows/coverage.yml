@@ -12,6 +12,10 @@ on:
         required: false
         type: string
         default: ""
+      minimum_coverage:
+        required: false
+        type: number
+        default: 86
 
 env:
   package_folder: ${{ inputs.package_folder }}
@@ -59,6 +63,6 @@ jobs:
         with:
           output-html: false
           coverage-files: ./${{ env.package_folder }}/lcov.info
-          minimum-coverage: 86 # revert back to 87+ later
+          minimum-coverage: ${{ inputs.minimum_coverage }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           working-directory: ./${{ env.package_folder }}
