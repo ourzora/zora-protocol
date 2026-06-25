@@ -35,6 +35,13 @@ export const SKILLS: SkillMeta[] = [
     description:
       "The agent's full interface to Zora — set up an identity and trade, browse, look up coins, send tokens, and handle DMs from the CLI",
   },
+  // Payments
+  {
+    name: "pay",
+    category: "Payments",
+    description:
+      "Pay for x402-protected resources and APIs on Base — fetch-and-pay a URL or sign a payment for a 402 challenge",
+  },
   // Onboarding
   {
     name: "onboarding",

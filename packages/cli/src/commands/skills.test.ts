@@ -59,6 +59,7 @@ describe("skills list", () => {
     expect(output).toContain("early-buyer");
     expect(output).toContain("watchlist");
     expect(output).toContain("take-profit");
+    expect(output).toContain("pay");
     expect(output).not.toContain("/zora-");
   });
 
@@ -68,10 +69,12 @@ describe("skills list", () => {
 
     const output = logSpy.mock.calls.map((c) => c[0]).join("\n");
     const parsed = JSON.parse(output);
-    expect(parsed.skills).toHaveLength(16);
+    expect(parsed.skills).toHaveLength(17);
     expect(parsed.skills.map((s: { name: string }) => s.name)).toEqual([
       // Core
       "cli",
+      // Payments
+      "pay",
       // Onboarding
       "onboarding",
       // Discovery
@@ -117,6 +120,16 @@ describe("bundled skill content", () => {
       expect(typeof SKILL_CONTENT[skill.name]).toBe("string");
       expect(SKILL_CONTENT[skill.name].length).toBeGreaterThan(0);
     }
+  });
+
+  it("registers the x402 pay skill with matching content", () => {
+    const pay = SKILLS.find((s) => s.name === "pay");
+    expect(pay).toBeDefined();
+    expect(pay!.category).toBe("Payments");
+    const content = SKILL_CONTENT["pay"];
+    expect(content).toContain("x402");
+    expect(content).toContain("PAYMENT-SIGNATURE");
+    expect(content).toContain("--max-value");
   });
 
   it("does not embed content for skills missing from the SKILLS list", () => {

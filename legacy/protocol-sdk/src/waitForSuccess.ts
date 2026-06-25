@@ -1,6 +1,5 @@
 import { expect } from "vitest";
-import { Hex } from "viem/_types/types/misc";
-import { PublicClient } from "viem";
+import { Hex, PublicClient } from "viem";
 
 export const waitForSuccess = async (hash: Hex, publicClient: PublicClient) => {
   const receipt = await publicClient.waitForTransactionReceipt({

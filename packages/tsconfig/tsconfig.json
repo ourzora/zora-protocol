@@ -6,7 +6,7 @@
     "isolatedModules": true,
     "lib": ["es2021"],
     "module": "esnext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "noImplicitAny": true,
     "noUncheckedIndexedAccess": true,
     "noUnusedLocals": true,
