@@ -1,10 +1,16 @@
 # @zoralabs/cli
 
+## 1.6.2
+
+### Patch Changes 
+
+- 9bc68ae99: Fix the `agent coin` help text to reference the correct flag. It previously pointed users to a non-existent `--with-coin` flag on `agent create`; creator coins are minted by default, so the guidance now correctly points to `--skip-coin`.
+
 ## 1.6.1
 
 ### Patch Changes
 
-- 9cd14f85c: Improve logic for agent harness detection 
+- 9cd14f85c: Improve logic for agent harness detection
 
 ## 1.6.0
 
