@@ -321,6 +321,21 @@ export function saveSmartWalletAddress(smartWalletAddress: Address): void {
   writeWallet({ smartWalletAddress });
 }
 
+/**
+ * Persist a wallet that connects to an EXISTING Zora account: stores the
+ * controlling private key and its smart wallet (account) address together so the
+ * trading commands resolve the account automatically. Drops any `agent` identity
+ * — this key controls a human-owned account, not an agent the CLI created — so a
+ * previously-recorded agent block (and its mirrored smart wallet address) can't
+ * linger and describe an account this key no longer owns.
+ */
+export function saveConnectedWallet(
+  privateKey: string,
+  smartWalletAddress: Address,
+): void {
+  writeWallet({ privateKey, smartWalletAddress, agent: undefined });
+}
+
 /** Returns the agent identity if this wallet was created by `zora agent create`. */
 export function getAgentWallet(): AgentWalletInfo | undefined {
   return readWallet()?.agent;

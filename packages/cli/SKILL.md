@@ -23,12 +23,15 @@ This skill turns you into a capable agent on Zora: you can **create a full oncha
 
 ## Mental Model
 
-The Zora CLI let you operate as one of two identities:
+The Zora CLI let you operate as one of three identities:
 
 | **Identity**                  | **Created by**                                | **Acts via**          | **Use when**                                                      |
 | ----------------------------- | --------------------------------------------- | --------------------- | ----------------------------------------------------------------- |
 | **Plain wallet (EOA)**        | `zora setup`                                  | EOA directly          | Simple trading, no agent features needed                          |
 | **Zora agent (Smart Wallet)** | `zora agent create` via the onboarding skills | Coinbase Smart Wallet | Full agent: DMs, posting, creator coin (default), sponsored setup |
+| **Existing Zora account**     | `zora wallet connect`                         | Coinbase Smart Wallet | Drive an account you already have (web/mobile) from the CLI       |
+
+> **Connecting an existing account:** if you already have a Zora account (created on the web or mobile app), run `zora wallet connect` and paste the private key that controls it — export it from Zora's wallet settings (Privy). The CLI derives the owner EOA, **auto-discovers the account's smart wallet on-chain** (no address to look up), verifies the key owns it, and saves both to `wallet.json`. After that, `buy` / `sell` / `coin create` act as your real account. Pass `--smart-wallet <addr>` to override discovery for a non-standard owner set. This is the fix for "found my EOA but not my smart wallet" — `setup` / `wallet configure --import` only store the EOA, so they trade from the bare key, not your account.
 
 > **Invoking the CLI:** every command runs through `npx @zoralabs/cli@latest …` — no global install needed (npx fetches it on first use). **Always pin `@latest`.** A bare `npx @zoralabs/cli` can run a stale, npx-cached build — the usual cause of version-skew bugs like "found my EOA but not my smart wallet." Verify with `npx @zoralabs/cli@latest --version`.
 
@@ -367,13 +370,15 @@ Follow these rules in all automated operation:
 
 ## Wallet Safety Reference
 
-| Action                                     | Safe?            | Notes                                    |
-| ------------------------------------------ | ---------------- | ---------------------------------------- |
-| `wallet export`                            | ⚠️ Use with care | Prints raw private key to stdout         |
-| `setup --force` on agent wallet            | ❌ Blocked       | Orphans smart wallet — use separate file |
-| `wallet configure --force` on agent wallet | ❌ Blocked       | Same guard as above                      |
-| `ZORA_PRIVATE_KEY` env var                 | ✅ Preferred     | Not exposed in shell history             |
-| `--private-key` flag                       | ⚠️ Avoid         | Visible in process listings              |
+| Action                                     | Safe?            | Notes                                        |
+| ------------------------------------------ | ---------------- | -------------------------------------------- |
+| `wallet export`                            | ⚠️ Use with care | Prints raw private key to stdout             |
+| `wallet connect`                           | ⚠️ Use with care | Imports the key that controls a real account |
+| `setup --force` on agent wallet            | ❌ Blocked       | Orphans smart wallet — use separate file     |
+| `wallet configure --force` on agent wallet | ❌ Blocked       | Same guard as above                          |
+| `wallet connect` on agent wallet           | ❌ Blocked       | Same irreversible-overwrite guard            |
+| `ZORA_PRIVATE_KEY` env var                 | ✅ Preferred     | Not exposed in shell history                 |
+| `--private-key` flag                       | ⚠️ Avoid         | Visible in process listings                  |
 
 ---
 

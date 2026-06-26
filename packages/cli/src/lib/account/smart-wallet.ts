@@ -15,7 +15,7 @@ import { base } from "viem/chains";
 import { createPublicClient } from "../client/public.js";
 import { createPrivateKeyAccount } from "./wallet.js";
 
-const SMART_WALLET_ABI = [
+export const SMART_WALLET_ABI = [
   {
     inputs: [{ name: "index", type: "uint256" }],
     name: "ownerAtIndex",

@@ -23,6 +23,7 @@ import {
 import { normalizeKey } from "../lib/wallet.js";
 import { track } from "../lib/analytics.js";
 import { configureWallet } from "../lib/wallet-setup.js";
+import { connectWallet } from "../lib/wallet-connect.js";
 
 const resolvePrivateKey = ():
   | { key: string; source: "env" | "file" }
@@ -237,6 +238,61 @@ walletCommand
 
     track("cli_wallet_config", {
       action: result.action,
+      output_format: json ? "json" : "text",
+    });
+  });
+
+walletCommand
+  .command("connect [key]")
+  .description(
+    "Connect an existing Zora account by importing the private key that controls it",
+  )
+  .option(
+    "--key <key>",
+    "Private key (hex) — alternative to the positional argument or prompt",
+  )
+  .option(
+    "--smart-wallet <address>",
+    "Smart wallet (account) address — overrides on-chain auto-discovery",
+  )
+  .option("--force", "Overwrite an already-configured wallet without prompting")
+  .option("--yes", "Skip interactive prompts (requires the key as an argument)")
+  .action(async function (
+    this: Command,
+    key: string | undefined,
+    options: { key?: string; smartWallet?: string; force?: boolean },
+  ) {
+    const json = getJson(this);
+    const nonInteractive = getYes(this);
+
+    const result = await connectWallet({
+      json,
+      nonInteractive,
+      key: options.key ?? key,
+      smartWallet: options.smartWallet,
+      force: options.force,
+    });
+
+    outputData(json, {
+      json: result,
+      render: () => {
+        console.log("\n✓ Connected\n");
+        console.log(`  Smart wallet: ${result.smartWalletAddress}`);
+        console.log(`  Owner (EOA):  ${result.ownerAddress}`);
+        console.log(`  Saved to:     ${result.path}`);
+        if (!result.discovered) {
+          console.log("\n  (using the smart wallet address you provided)");
+        }
+        console.log(`\n  ${BACKUP_WARNING}\n`);
+        console.log(
+          `  Fund the smart wallet with ETH or USDC on Base to start trading.\n\n  ${DEPOSIT_SOURCES}`,
+        );
+      },
+    });
+
+    track("cli_wallet_connect", {
+      discovered: result.discovered,
+      override: options.smartWallet !== undefined,
       output_format: json ? "json" : "text",
     });
   });
