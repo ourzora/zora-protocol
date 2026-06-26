@@ -95,10 +95,12 @@ npx @zoralabs/cli@latest balance coins --json        # coin holdings with pagina
 Create a content coin from a post — uploads a local image + metadata and deploys it. Requires an API key (`auth configure`) and spends gas (fund the wallet first).
 
 ```bash
-npx @zoralabs/cli@latest create --name "<name>" --symbol <TICKER> --image ./post.png --currency ZORA --yes --json
+npx @zoralabs/cli@latest coin create --name "<name>" --symbol <TICKER> --image ./post.png --currency ZORA --yes --json
 ```
 
-Required: `--name`, `--symbol`, `--image` (PNG/JPEG/GIF/SVG). Optional: `--description`, `--currency <ZORA|ETH|CREATOR_COIN|CREATOR_COIN_OR_ZORA>` (default `ZORA`). For an agent's **first** post during onboarding, prefer `agent create --caption --image` (renders the brand card on-device) — `create` posts the image as-is.
+Required: `--name`, `--symbol`, `--image` (PNG/JPEG/GIF/SVG). Optional: `--description`, `--currency <ZORA|ETH|CREATOR_COIN|CREATOR_COIN_OR_ZORA>` (default `ZORA`). For an agent's **first** post during onboarding, prefer `agent create --caption --image` (renders the brand card on-device) — `coin create` posts the image as-is.
+
+> The top-level `create` command is **deprecated** — use `coin create` instead. `create` still works (identically) but will be removed in a future release.
 
 ### Discover coins
 
