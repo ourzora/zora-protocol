@@ -37,11 +37,14 @@ import { coinCommand } from "./coin.js";
 // These drive the real `buildProgram()` (not the lightweight `createProgram`
 // harness) so they prove the commands are actually wired into the CLI.
 describe("coin command registration", () => {
-  it("registers a top-level `coin` command with a `create` subcommand", () => {
+  it("registers a top-level `coin` command with its subcommands", () => {
     const program = buildProgram();
     const coin = program.commands.find((c) => c.name() === "coin");
     expect(coin).toBeDefined();
-    expect(coin!.commands.map((c) => c.name())).toContain("create");
+    const subcommands = coin!.commands.map((c) => c.name());
+    expect(subcommands).toEqual(
+      expect.arrayContaining(["create", "hide", "unhide"]),
+    );
   });
 
   it("keeps the deprecated top-level `create` command registered", () => {

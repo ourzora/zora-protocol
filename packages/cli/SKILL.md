@@ -90,6 +90,17 @@ npx @zoralabs/cli@latest balance spendable --json    # ETH, USDC, ZORA only
 npx @zoralabs/cli@latest balance coins --json        # coin holdings with pagination
 ```
 
+### Hide a coin
+
+Hide a coin (e.g. an unwanted airdrop or spam) from your holdings and profile across Zora. Hiding is a personal preference — it doesn't move or burn the coin, and there's no holding requirement, so any coin can be hidden. Requires a wallet (`agent create`).
+
+```bash
+npx @zoralabs/cli@latest coin hide <address | name> --json     # hide a coin
+npx @zoralabs/cli@latest coin unhide <address | name> --json   # reverse it
+```
+
+Accepts a coin address (preferred for spam that may not be indexed) or a creator/trend name. Coins are assumed to be on Base mainnet; for a coin on another chain, pass `--chain <id>`. The effect is the same one the Zora app's "Hide post" action applies, scoped to your account.
+
 ### Create a post
 
 Create a content coin from a post — uploads a local image + metadata and deploys it. Requires an API key (`auth configure`) and spends gas (fund the wallet first).
