@@ -1,0 +1,87 @@
+# claim
+
+Claim vested rewards from a creator coin. Half of a creator coin's supply vests linearly to its creator over time; this command releases the portion that has vested so far to the payout recipient. Requires a [wallet](/commands/setup). Claims from your [smart wallet](/guides/wallet-modes) when one is configured, otherwise your EOA.
+
+```bash
+zora claim [options]
+```
+
+By default, `claim` targets the creator coin tied to the active wallet's Zora profile. Pass `--coin` to claim from a specific creator coin instead.
+
+## Options
+
+| Flag               | Description                                               |
+| ------------------ | --------------------------------------------------------- |
+| `--coin <address>` | Creator coin address to claim from (defaults to your own) |
+| `--yes`            | Skip confirmation prompt and execute directly             |
+| `--json`           | Machine-readable JSON output                              |
+
+:::info
+Vested rewards accrue over time. When nothing has vested yet, `claim` reports that there is nothing to claim and skips the transaction — no gas is spent.
+:::
+
+## Examples
+
+### Claim from your own creator coin
+
+```bash
+npx @zoralabs/cli claim
+```
+
+```
+ Claim creator coin rewards
+
+ Coin         0x9b13358e3a023507e7046c18f508a958cda75f54
+ Claimable    1,250.5
+
+ Confirm? (y/n)
+```
+
+After confirming:
+
+```
+ Claimed creator coin rewards
+
+ Coin         0x9b13358e3a023507e7046c18f508a958cda75f54
+ Claimed      1,250.5
+ Tx           0x789abc...
+```
+
+### Claim from a specific coin
+
+```bash
+npx @zoralabs/cli claim --coin 0x9b13358e3a023507e7046c18f508a958cda75f54
+```
+
+### Non-interactive for scripting
+
+```bash
+npx @zoralabs/cli claim --yes --json
+```
+
+## JSON output
+
+When rewards are claimed:
+
+```json
+{
+  "action": "claim",
+  "coin": "0x9b13358e3a023507e7046c18f508a958cda75f54",
+  "claimed": {
+    "amount": "1250.5",
+    "raw": "1250500000000000000000"
+  },
+  "tx": "0x789abc..."
+}
+```
+
+When nothing has vested yet, no transaction is sent and `claimed` is `false`:
+
+```json
+{
+  "action": "claim",
+  "coin": "0x9b13358e3a023507e7046c18f508a958cda75f54",
+  "claimable": "0",
+  "claimed": false
+}
+```

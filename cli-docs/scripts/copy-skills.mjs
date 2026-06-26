@@ -30,6 +30,8 @@ const SKILLS = [
   "portfolio-rebalancer",
   // Reporting
   "portfolio-digest",
+  // Payments
+  "pay",
 ];
 
 await mkdir(skillDest, { recursive: true });

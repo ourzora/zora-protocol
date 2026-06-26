@@ -2,11 +2,12 @@
 
 The Zora CLI stores configuration in `~/.config/zora/`:
 
-| File          | Contents                                                            | Permissions |
-| ------------- | ------------------------------------------------------------------- | ----------- |
-| `config.json` | API key, anonymous analytics ID, DM-check timestamp                 | `0600`      |
-| `wallet.json` | Private key (plain text), smart wallet & agent metadata             | `0600`      |
-| `budget.json` | Global [spending budget](/commands/agent#agent-budget) cap + ledger | `0600`      |
+| File           | Contents                                                            | Permissions |
+| -------------- | ------------------------------------------------------------------- | ----------- |
+| `config.json`  | API key, anonymous analytics ID, DM-check timestamp                 | `0600`      |
+| `wallet.json`  | Private key (plain text), smart wallet & agent metadata             | `0600`      |
+| `budget.json`  | Global [spending budget](/commands/agent#agent-budget) cap + ledger | `0600`      |
+| `session.json` | Cached Privy session used by agent and DM commands                  | `0600`      |
 
 The private key in `wallet.json` is stored in plain text — it is protected by file permissions (`0600`, owner read/write only), not encryption. The files are versioned (`version: 1`) so the CLI can validate and migrate them. `budget.json` is created the first time you run `zora agent budget set`.
 
@@ -66,15 +67,17 @@ The wallet file at `~/.config/zora/wallet.json` is the only copy of the private 
 
 ## All Environment Variables
 
-| Variable                    | Description                                                                          |
-| --------------------------- | ------------------------------------------------------------------------------------ |
-| `ZORA_API_KEY`              | API key (overrides config file)                                                      |
-| `ZORA_PRIVATE_KEY`          | Wallet private key (overrides wallet file)                                           |
-| `ZORA_API_TARGET`           | Override API base URL (for dev/staging)                                              |
-| `ZORA_SMART_WALLET_ADDRESS` | Smart wallet address to use for trading/posting when not recorded in the wallet file |
-| `ZORA_NO_ANALYTICS`         | Set to `1` to disable analytics                                                      |
-| `DO_NOT_TRACK`              | Set to `1` to disable analytics                                                      |
-| `NO_COLOR`                  | Set to disable colored terminal output                                               |
+| Variable                    | Description                                                                            |
+| --------------------------- | -------------------------------------------------------------------------------------- |
+| `ZORA_API_KEY`              | API key (overrides config file)                                                        |
+| `ZORA_PRIVATE_KEY`          | Wallet private key (overrides wallet file)                                             |
+| `ZORA_API_TARGET`           | Override API base URL (for dev/staging)                                                |
+| `ZORA_PROFILE_API`          | Override the profile/messaging API base URL (for dev/staging)                          |
+| `ZORA_SMART_WALLET_ADDRESS` | Smart wallet address to use for trading/posting when not recorded in the wallet file   |
+| `ZORA_DM_NOTIFY`            | Set to `always` to bypass the throttle on the new-DM notification shown after commands |
+| `ZORA_NO_ANALYTICS`         | Set to `1` to disable analytics                                                        |
+| `DO_NOT_TRACK`              | Set to `1` to disable analytics                                                        |
+| `NO_COLOR`                  | Set to disable colored terminal output                                                 |
 
 ## Analytics
 
