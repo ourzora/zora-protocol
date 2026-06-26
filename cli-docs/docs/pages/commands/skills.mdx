@@ -21,6 +21,12 @@ zora skills [command]
 | ----- | ------------------------------------------------------------------------------ |
 | `cli` | The agent's full interface to Zora — set up an identity, trade, browse, and DM |
 
+### Payments
+
+| Skill | Description                                                                                                   |
+| ----- | ------------------------------------------------------------------------------------------------------------- |
+| `pay` | Pay for x402-protected resources and APIs on Base — fetch-and-pay a URL or sign a payment for a 402 challenge |
+
 ### Onboarding
 
 | Skill        | Description                                                      |
@@ -65,7 +71,9 @@ zora skills [command]
 
 ## skills add
 
-Install a skill into your agent's skills directory. The CLI fetches the skill from `https://agents.zora.com/skill/<name>.md` and writes it to `<harness>/skills/zora-<name>/SKILL.md` — for example `.claude/skills/zora-onboarding/SKILL.md`. The `zora-` prefix namespaces the install, and the containing folder name is what the harness uses as the command (e.g. `/zora-onboarding`).
+Install a skill into your agent's skills directory. Skill content is bundled into the CLI and written from disk — there is no network fetch, so the installed bytes are exactly the reviewed source at the commit the CLI was built from. Each skill is written to `<harness>/skills/zora-<name>/SKILL.md` — for example `.claude/skills/zora-onboarding/SKILL.md`. The `zora-` prefix namespaces the install, and the containing folder name is what the harness uses as the command (e.g. `/zora-onboarding`).
+
+Every strategy skill depends on the core `cli` skill, so installing any strategy skill also installs `zora-cli` alongside it.
 
 The CLI auto-detects the target harness by looking for a `.claude`, `.cursor`, `.windsurf`, `.openclaw`, or `.hermes` directory in the current working directory (in that order), falling back to `.claude` when none is found.
 

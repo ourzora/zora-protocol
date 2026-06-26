@@ -236,6 +236,8 @@ export default defineConfig({
         { text: "buy", link: "/commands/buy" },
         { text: "sell", link: "/commands/sell" },
         { text: "send", link: "/commands/send" },
+        { text: "claim", link: "/commands/claim" },
+        { text: "pay", link: "/commands/pay" },
         { text: "comment", link: "/commands/comment" },
         { text: "create", link: "/commands/create" },
         { text: "balance", link: "/commands/balance" },

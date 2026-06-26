@@ -52,11 +52,11 @@ The CLI exits with code `1` on errors.
 The CLI decodes Solidity revert errors into human-readable messages with actionable guidance. Instead of an opaque "Execution reverted" message, specific contract errors are shown with suggestions:
 
 ```
-Error: ERC20InsufficientBalance
-You don't have enough of this coin to complete the sell. Check your balance with `zora balance`.
+Error: SlippageBoundsExceeded
+Price moved too much during your trade. Try increasing --slippage (e.g. --slippage 3) or reducing the amount.
 ```
 
-17 known contract errors are decoded, covering common scenarios like insufficient balances, slippage violations, and invalid trade parameters.
+18 known contract errors are decoded, covering common scenarios like slippage violations, insufficient liquidity or funds, transfer failures, and market-state issues.
 
 ### Coin Resolution
 

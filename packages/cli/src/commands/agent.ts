@@ -546,7 +546,7 @@ agentCommand
 agentCommand
   .command("coin")
   .description(
-    "Create the agent's creator coin for an existing agent. Signs in with the agent's EOA (reusing its cached Privy session), then mints the sponsored creator coin — its name and ticker come from the profile. Needs no ETH. Use this when `agent create` was run without --with-coin.",
+    "Create the agent's creator coin for an existing agent. Signs in with the agent's EOA (reusing its cached Privy session), then mints the sponsored creator coin — its name and ticker come from the profile. Needs no ETH. Use this when `agent create` was run with --skip-coin.",
   )
   .option(
     "--private-key <key>",
@@ -592,8 +592,8 @@ agentCommand
 
     // Minting a creator coin is an irreversible on-chain action, and running this
     // again mints ANOTHER coin. Confirm first when the wallet already owns an agent
-    // (parity with `agent create --with-coin`). --dry-run mints nothing, so skip it
-    // there; --json (scripted) and --force proceed without prompting.
+    // (parity with `agent create`, which mints by default). --dry-run mints nothing,
+    // so skip it there; --json (scripted) and --force proceed without prompting.
     if (!options.dryRun) {
       const existingAgent = peekAgentWallet();
       if (existingAgent) {

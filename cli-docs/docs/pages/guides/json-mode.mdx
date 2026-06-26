@@ -12,8 +12,10 @@ When `--json` is passed:
 
 - Output is structured JSON on stdout
 - The beta warning goes to stderr (won't interfere with parsing)
-- Interactive prompts are replaced by `--yes` behavior where applicable
+- Interactive UI (live views, spinners) is suppressed in favor of a single JSON result
 - Errors return a JSON object with `error` and optional `suggestion` fields
+
+`--json` does not skip confirmation prompts on its own — for trade commands (`buy`, `sell`, `send`, `claim`, `pay`), pass `--yes` alongside `--json` to execute without prompting.
 
 ## Shell Scripting Examples
 

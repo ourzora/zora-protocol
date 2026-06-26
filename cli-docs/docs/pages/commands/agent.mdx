@@ -243,7 +243,7 @@ zora agent connect-email [options]
 Advanced SIWE/Privy overrides — `--app-id`, `--origin`, `--chain-id` — are also available but rarely needed.
 
 :::info
-**Running unattended (two steps).** The link needs a one-time code from the inbox, so under `--yes` or `--json` the flow splits into two runs: the first sends the code and returns a `nextStep` (with `sent: true`), then re-run with `--code <code>` to finish. Interactively (no `--yes`), the command sends the code and prompts for it in one go. A linked email lets a human sign in to the same account on the Zora web and mobile apps and recover it, complementing the `wallet.json` backup.
+**Running unattended (two steps).** The link needs a one-time code from the inbox, so under `--yes` or `--json` the flow splits into two runs: the first sends the code and returns a `nextStep` (with `codeSent: true` and `status: "awaiting_code"`), then re-run with `--code <code>` to finish. Interactively (no `--yes`), the command sends the code and prompts for it in one go. A linked email lets a human sign in to the same account on the Zora web and mobile apps and recover it, complementing the `wallet.json` backup.
 :::
 
 #### Link an email

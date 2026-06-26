@@ -22,6 +22,16 @@ zora wallet [command]
 npx @zoralabs/cli wallet info
 ```
 
+When a [smart wallet](/guides/wallet-modes) is configured, `info` leads with it and shows the owning EOA below:
+
+```
+  Smart wallet: 0x1111111111111111111111111111111111111111
+  Owner (EOA):  0xb4a06BdD9e0E60FFE22E4E7590842bfD2069034E
+  Source:  ~/.config/zora/wallet.json
+```
+
+For an EOA-only wallet (no smart wallet), it shows a single address:
+
 ```
   Address: 0xb4a06BdD9e0E60FFE22E4E7590842bfD2069034E
   Source:  ~/.config/zora/wallet.json
@@ -35,9 +45,13 @@ When the wallet comes from the `ZORA_PRIVATE_KEY` environment variable, the sour
 npx @zoralabs/cli wallet info --json
 ```
 
+`address` is the user-facing wallet — the smart wallet when one is configured, otherwise the EOA. `smartWalletAddress` is `null` when no smart wallet is set, and `ownerAddress` is always the EOA:
+
 ```json
 {
-  "address": "0xb4a06BdD9e0E60FFE22E4E7590842bfD2069034E",
+  "address": "0x1111111111111111111111111111111111111111",
+  "smartWalletAddress": "0x1111111111111111111111111111111111111111",
+  "ownerAddress": "0xb4a06BdD9e0E60FFE22E4E7590842bfD2069034E",
   "source": "~/.config/zora/wallet.json"
 }
 ```
