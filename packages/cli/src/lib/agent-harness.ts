@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 
 export type AgentHarness =
   | "claude"
@@ -16,11 +16,11 @@ export type UapiAgentHarness =
   | "HERMES";
 
 export const AGENT_HARNESS_ORDER: AgentHarness[] = [
+  "hermes",
+  "openclaw",
+  "windsurf",
   "claude",
   "cursor",
-  "windsurf",
-  "openclaw",
-  "hermes",
 ];
 
 export const AGENT_HARNESS_SKILLS_DIRS: Record<AgentHarness, string> = {
@@ -47,10 +47,23 @@ export const AGENT_HARNESS_TO_UAPI: Record<AgentHarness, UapiAgentHarness> = {
   hermes: "HERMES",
 };
 
-export const detectAgentHarness = (cwd: string) =>
+export const detectAgentHarnessInDir = (dir: string) =>
   AGENT_HARNESS_ORDER.find((agent) =>
-    existsSync(join(cwd, AGENT_HARNESS_ROOT_DIRS[agent])),
+    existsSync(join(dir, AGENT_HARNESS_ROOT_DIRS[agent])),
   );
+
+export const detectAgentHarness = (cwd: string): AgentHarness | undefined => {
+  let dir = cwd;
+
+  while (true) {
+    const detected = detectAgentHarnessInDir(dir);
+    if (detected) return detected;
+
+    const parent = dirname(dir);
+    if (parent === dir) return undefined;
+    dir = parent;
+  }
+};
 
 export const mapAgentHarnessToUapi = (
   harness: AgentHarness,

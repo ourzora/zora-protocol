@@ -2,7 +2,12 @@ import { mkdtempSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, describe, expect, it } from "vitest";
-import { detectAgentHarness, mapAgentHarnessToUapi } from "./agent-harness.js";
+import {
+  AGENT_HARNESS_ORDER,
+  detectAgentHarness,
+  detectAgentHarnessInDir,
+  mapAgentHarnessToUapi,
+} from "./agent-harness.js";
 
 describe("detectAgentHarness", () => {
   let tempDir: string | null = null;
@@ -29,7 +34,47 @@ describe("detectAgentHarness", () => {
     mkdirSync(join(tempDir, ".windsurf"));
     mkdirSync(join(tempDir, ".claude"));
 
-    expect(detectAgentHarness(tempDir)).toBe("claude");
+    expect(detectAgentHarness(tempDir)).toBe(
+      AGENT_HARNESS_ORDER.indexOf("windsurf") <
+        AGENT_HARNESS_ORDER.indexOf("claude")
+        ? "windsurf"
+        : "claude",
+    );
+  });
+
+  it("detects a harness from a parent directory", () => {
+    tempDir = mkdtempSync(join(tmpdir(), "zora-agent-harness-"));
+    mkdirSync(join(tempDir, ".cursor"));
+    mkdirSync(join(tempDir, "nested/deeper"), { recursive: true });
+
+    expect(detectAgentHarness(join(tempDir, "nested/deeper"))).toBe("cursor");
+  });
+
+  it("prefers the nearest ancestor over a higher-priority harness farther up", () => {
+    tempDir = mkdtempSync(join(tmpdir(), "zora-agent-harness-"));
+    mkdirSync(join(tempDir, ".claude"));
+    mkdirSync(join(tempDir, "nested/.cursor"), { recursive: true });
+    mkdirSync(join(tempDir, "nested/deeper"), { recursive: true });
+
+    expect(detectAgentHarness(join(tempDir, "nested/deeper"))).toBe("cursor");
+  });
+});
+
+describe("detectAgentHarnessInDir", () => {
+  let tempDir: string | null = null;
+
+  afterEach(() => {
+    if (tempDir) rmSync(tempDir, { recursive: true, force: true });
+    tempDir = null;
+  });
+
+  it("checks only the provided directory", () => {
+    tempDir = mkdtempSync(join(tmpdir(), "zora-agent-harness-"));
+    mkdirSync(join(tempDir, ".cursor"));
+    mkdirSync(join(tempDir, "nested"), { recursive: true });
+
+    expect(detectAgentHarnessInDir(join(tempDir, "nested"))).toBeUndefined();
+    expect(detectAgentHarnessInDir(tempDir)).toBe("cursor");
   });
 });
 

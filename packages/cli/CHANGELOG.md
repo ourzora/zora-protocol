@@ -1,8 +1,14 @@
 # @zoralabs/cli
 
+## 1.6.1
+
+### Patch Changes
+
+- 9cd14f85c: Improve logic for agent harness detection 
+
 ## 1.6.0
 
-### Minor Changes 
+### Minor Changes
 
 - fbb389583: Add a `pay` command for x402-protected resources on Base
 
