@@ -43,7 +43,7 @@ describe("coin command registration", () => {
     expect(coin).toBeDefined();
     const subcommands = coin!.commands.map((c) => c.name());
     expect(subcommands).toEqual(
-      expect.arrayContaining(["create", "hide", "unhide"]),
+      expect.arrayContaining(["create", "edit", "hide", "unhide"]),
     );
   });
 

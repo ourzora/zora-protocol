@@ -21,17 +21,9 @@ import { getJson, outputErrorAndExit, outputJson } from "../lib/output.js";
 import { safeExit, SUCCESS } from "../lib/exit.js";
 import { track, shutdownAnalytics } from "../lib/analytics.js";
 import { gasErrorSuggestion } from "../lib/gas.js";
+import { imageMimeForPath } from "../lib/image.js";
 import { validateTicker } from "../lib/ticker.js";
 import { serializeError } from "../lib/errors.js";
-
-/** Image extensions accepted by the metadata uploader, mapped to their MIME type. */
-const IMAGE_MIME_BY_EXT: Record<string, string> = {
-  ".png": "image/png",
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".gif": "image/gif",
-  ".svg": "image/svg+xml",
-};
 
 const VALID_CURRENCIES = CreateConstants.ContentCoinCurrencies;
 
@@ -192,12 +184,11 @@ async function runCreate(this: Command, opts: CreateOptions) {
     );
   }
 
-  const ext = extname(imagePath).toLowerCase();
-  const mimeType = IMAGE_MIME_BY_EXT[ext];
+  const mimeType = imageMimeForPath(imagePath);
   if (!mimeType) {
     return outputErrorAndExit(
       json,
-      `Unsupported image type: ${ext || "(no extension)"}`,
+      `Unsupported image type: ${extname(imagePath).toLowerCase() || "(no extension)"}`,
       "Supported types: PNG, JPEG, JPG, GIF, SVG.",
     );
   }

@@ -116,6 +116,17 @@ Required: `--name`, `--symbol`, `--image` (PNG/JPEG/GIF/SVG). Optional: `--descr
 
 > The top-level `create` command is **deprecated** — use `coin create` instead. `create` still works (identically) but will be removed in a future release.
 
+### Edit a post
+
+Edit a post's **image and/or description (caption)** — the same edit the Zora app's "Edit post" applies. The name/ticker **can't** be changed (the app keeps it fixed for coins too). Only the coin's creator can edit it. Requires an API key (`auth configure`) and spends gas (it updates the coin's metadata on-chain).
+
+```bash
+npx @zoralabs/cli@latest coin edit <address | name> --description "<new caption>" --json
+npx @zoralabs/cli@latest coin edit <address | name> --image ./new.png --json
+```
+
+Pass `--image <path>` (PNG/JPEG/GIF/SVG), `--description <text>`, or both — whatever is omitted is preserved. Re-uploads the updated metadata to IPFS and points the coin's `contractURI` at it.
+
 ### Discover coins
 
 ```bash
