@@ -299,6 +299,73 @@ _(Add entries as discovered)_
 
 ---
 
+## Privy / CLI OAuth
+
+Knowledge for the CLI's headless Privy flows (`packages/cli/src/lib/privy.ts`, `agent link`/`connect-email`). These hit Privy's public `auth.privy.io` REST endpoints directly — no Privy SDK.
+
+### Social linking uses a broker redirect, not a direct one
+
+**The Issue:** In Privy's OAuth flow the provider redirects to **Privy's** callback, not to the app — so seeing `redirect_uri=https://auth.privy.io/...` in the provider authorize URL is correct, not a bug.
+
+**The flow (two hops):**
+
+1. Browser → provider (e.g. X) with `redirect_uri=https://auth.privy.io/api/v1/oauth/callback` (Privy's own callback, registered with the provider).
+2. User approves → provider redirects to Privy's callback with the provider code.
+3. Privy exchanges that code with the provider server-side, then redirects the browser to **our** `redirect_to` (the value passed to `oauth/init`, e.g. `http://localhost:8976`) with `privy_oauth_code` / `privy_oauth_state`.
+4. The CLI's local callback server catches step 3 and calls `oauth/link`.
+
+**Why:** Privy is an OAuth broker. Our `redirect_to` only governs the second hop (Privy → us); the provider only ever talks to Privy. So the local callback never appears as the provider `redirect_uri`.
+
+**Reference:** packages/cli/src/lib/oauth-callback-server.ts, packages/cli/src/lib/privy.ts (`initOAuthLink`)
+
+### `oauth/link` requires `code_type: "raw"`
+
+**The Issue:** When exchanging the `privy_oauth_code` from the redirect at `POST /api/v1/oauth/link`, the `code_type` field must be `"raw"` — not `"oauth"` or the provider name.
+
+**Wrong:**
+
+```ts
+// HTTP 400: [Input error] `code_type`: Invalid enum value. Expected 'raw', received 'oauth'.
+{ authorization_code, code_type: "oauth", state_code, code_verifier }
+```
+
+**Correct:**
+
+```ts
+{ authorization_code, code_type: "raw", state_code, code_verifier }
+```
+
+**Why:** `raw` denotes a raw provider authorization code (what Privy hands back as `privy_oauth_code`), as opposed to other internal code types (e.g. cross-app). The value isn't a string in the minified browser SDK, so it had to be confirmed empirically against a live link.
+
+**Reference:** packages/cli/src/lib/privy.ts (`linkOAuthWithCode`)
+
+### Provider re-link cooldown surfaces as a timeout, not a clean error
+
+**The Issue:** X/Twitter (and similar providers) enforce a multi-day cooldown before an account that was previously linked to an OAuth app can be re-linked; in the CLI this manifests as the provider erroring on its own page and never redirecting back, so the local server times out (`Timed out after 300s…`) rather than returning a usable error.
+
+**Symptoms seen:** provider page shows "You weren't able to give access to the App"; Privy's web SDK surfaces "account can't be linked, it has been previously linked — try again in 7 days." The CLI just times out because step 3 above never fires.
+
+**How to confirm it's the cooldown, not config:** compare the generated provider authorize URL from the CLI vs. the same flow on the web app — if `client_id`, `redirect_uri`, and `scope` are identical, the request is valid and the failure is account state (already linked / within cooldown), not credentials. To test the happy path, use a provider account that has never been linked to the app.
+
+**Gotchas:**
+
+- The CLI's `hasLinkedOAuthProvider` pre-check only catches an account already linked to the **current** Privy user — it can't see the provider-side cooldown for an unlinked account or one linked to a different user, so the timeout fallback is expected there.
+- A **blank** Twitter client id/secret in the Privy dashboard can be a red herring: linking can still work (Privy resolves usable credentials), so blank fields do not by themselves explain a failure — verify by comparing `client_id` against the working web flow before assuming a credentials problem.
+
+**Reference:** packages/cli/src/lib/oauth-callback-server.ts (`waitForCallback` timeout), packages/cli/src/commands/agent.ts (`agent link`)
+
+### Linking only sticks after a profile sync; Instagram is not a Privy-OAuth social
+
+**The Issue:** A social linked via Privy `oauth/link` only appears on the Zora profile after the no-arg `updateSocials` GraphQL mutation is run; and Instagram is **not** linked via Privy OAuth at all — Zora uses a separate bio-verification flow for it.
+
+**Twitter / TikTok:** Privy OAuth (`oauth/init` → `oauth/link`) attaches the account in Privy, then the `updateSocials` mutation syncs Privy's linked socials onto the Zora profile (`GraphQLAccountProfile.socialAccounts`). Skipping the sync leaves the account linked in Privy but invisible on web/mobile. `updateSocials.socialAccounts.forceUnlinkedSocials` (an `[ESocialPlatform!]`) lists platforms the backend refused to keep linked, e.g. within a re-link cooldown.
+
+**Instagram:** Has **no** `linkInstagram`/Privy-OAuth path. The web app links it via `startInstagramVerificationJob(instagramUsername)` — the user adds their Zora profile URL to their Instagram bio, the backend verifies it, and the client polls `latestInstagramVerificationJob`. `updateSocials` does not sync Instagram from Privy. Symptom of trying the OAuth path anyway: `oauth/link` returns HTTP 403 "Unable to fetch user details from Instagram." So the CLI's `agent link` supports only `twitter` and `tiktok`; Instagram would need the separate verification flow.
+
+**Reference:** packages/cli/src/lib/agent/social.ts (`syncSocials`), zora frontend `modules/social-accounts/useUpdatePrivySocials.ts` (Twitter/TikTok) and `useInstagramAccount.ts` (Instagram)
+
+---
+
 ## Entry Template
 
 When adding new entries, use this format:

@@ -16,7 +16,16 @@ import {
   sendEmailCode,
   linkEmailWithCode,
   hasLinkedEmail,
+  resolveSocialProvider,
+  initOAuthLink,
+  linkOAuthWithCode,
+  hasLinkedOAuthProvider,
+  SOCIAL_PROVIDERS,
 } from "../lib/privy.js";
+import { ensurePrivySession } from "../lib/privy-session.js";
+import { startOAuthCallbackServer } from "../lib/oauth-callback-server.js";
+import { openBrowser } from "../lib/open-browser.js";
+import { syncSocials } from "../lib/agent/social.js";
 import { inputOrFail } from "../lib/prompt.js";
 import { loadAvatar } from "../lib/agent/avatar.js";
 import { updateAgentProfile } from "../lib/agent/update-profile.js";
@@ -45,13 +54,43 @@ vi.mock("../lib/agent/avatar.js", () => ({
 
 vi.mock("../lib/privy.js", () => ({
   ZORA_PRIVY_APP_ID: "test-app-id",
+  ZORA_PRIVY_CLI_CLIENT_ID: "test-client-id",
   DEFAULT_SIWE_ORIGIN: "https://zora.com",
   DEFAULT_SIWE_CHAIN_ID: 8453,
   createPrivyAccount: vi.fn(),
   sendEmailCode: vi.fn(),
   linkEmailWithCode: vi.fn(),
   hasLinkedEmail: vi.fn(),
+  SOCIAL_PROVIDERS: {
+    twitter: {
+      privyProvider: "twitter",
+      linkedAccountType: "twitter_oauth",
+      platform: "TWITTER",
+      label: "Twitter/X",
+    },
+    tiktok: {
+      privyProvider: "tiktok",
+      linkedAccountType: "tiktok_oauth",
+      platform: "TIKTOK",
+      label: "TikTok",
+    },
+  },
+  resolveSocialProvider: vi.fn(),
+  initOAuthLink: vi.fn(),
+  linkOAuthWithCode: vi.fn(),
+  hasLinkedOAuthProvider: vi.fn(),
 }));
+
+vi.mock("../lib/privy-session.js", () => ({ ensurePrivySession: vi.fn() }));
+
+vi.mock("../lib/oauth-callback-server.js", () => ({
+  startOAuthCallbackServer: vi.fn(),
+  OAUTH_CALLBACK_PORT: 8976,
+}));
+
+vi.mock("../lib/open-browser.js", () => ({ openBrowser: vi.fn() }));
+
+vi.mock("../lib/agent/social.js", () => ({ syncSocials: vi.fn() }));
 
 vi.mock("../lib/prompt.js", () => ({ inputOrFail: vi.fn() }));
 
@@ -969,6 +1008,301 @@ describe("zora agent connect-email", () => {
     expect(output).toContain("a@b.com");
     expect(output).toContain(PRIVY_ACCOUNT.did);
     expect(output).not.toContain(PRIVY_ACCOUNT.accessToken);
+  });
+});
+
+describe("zora agent socials link", () => {
+  const PRIVY_ACCOUNT = {
+    address: "0xAbC0000000000000000000000000000000000001",
+    did: "did:privy:test123",
+    accessToken: "header.payload.signature",
+    cookie: "privy-token=abc",
+    isNewUser: false,
+    linkedAccounts: [],
+  };
+
+  const closeMock = vi.fn();
+  const waitForCallbackMock = vi.fn();
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    delete process.env.ZORA_PRIVATE_KEY;
+    vi.mocked(getPrivateKey).mockReturnValue(SAVED_PK);
+    vi.mocked(createPrivyAccount).mockResolvedValue(PRIVY_ACCOUNT);
+    // The command resolves the typed provider name to its descriptor; route
+    // known names to the (statically mocked) SOCIAL_PROVIDERS entries.
+    vi.mocked(resolveSocialProvider).mockImplementation(
+      (name: string) =>
+        (SOCIAL_PROVIDERS as Record<string, (typeof SOCIAL_PROVIDERS)[string]>)[
+          name.toLowerCase()
+        ],
+    );
+    vi.mocked(hasLinkedOAuthProvider).mockReturnValue(false);
+    vi.mocked(startOAuthCallbackServer).mockResolvedValue({
+      redirectUri: "http://localhost:8976",
+      waitForCallback: waitForCallbackMock,
+      close: closeMock,
+    });
+    vi.mocked(initOAuthLink).mockResolvedValue({
+      authorizationUrl: "https://x.com/i/oauth2/authorize?x=1",
+      stateCode: "state-xyz",
+      codeVerifier: "verifier-xyz",
+    });
+    waitForCallbackMock.mockResolvedValue({
+      code: "auth-code",
+      state: "state-xyz",
+      provider: "twitter",
+    });
+    vi.mocked(linkOAuthWithCode).mockResolvedValue({
+      linkedAccounts: [{ type: "twitter_oauth" }],
+    });
+    vi.mocked(syncSocials).mockResolvedValue({
+      forceUnlinkedSocials: [],
+      usernames: { twitter: "zora_agent" },
+    });
+    vi.mocked(openBrowser).mockReturnValue(true);
+  });
+
+  it("runs the full OAuth link flow and reports success (JSON)", async () => {
+    const log = captureLog();
+    await runAgent(["socials", "link", "twitter", "--json"]);
+    const parsed = JSON.parse(log.output());
+    log.restore();
+
+    expect(initOAuthLink).toHaveBeenCalledWith(
+      expect.objectContaining({
+        provider: "twitter",
+        redirectTo: "http://localhost:8976",
+        accessToken: PRIVY_ACCOUNT.accessToken,
+        cookie: PRIVY_ACCOUNT.cookie,
+      }),
+    );
+    expect(linkOAuthWithCode).toHaveBeenCalledWith(
+      expect.objectContaining({
+        authorizationCode: "auth-code",
+        stateCode: "state-xyz",
+        codeVerifier: "verifier-xyz",
+      }),
+    );
+    // The server is always torn down.
+    expect(closeMock).toHaveBeenCalled();
+    // The Zora profile is synced from Privy so the link shows on profiles.
+    expect(syncSocials).toHaveBeenCalledWith(
+      PRIVY_ACCOUNT.accessToken,
+      expect.objectContaining({ awaitPlatform: "twitter" }),
+    );
+    expect(parsed).toMatchObject({
+      provider: "twitter",
+      did: PRIVY_ACCOUNT.did,
+      address: PRIVY_ACCOUNT.address,
+      alreadyLinked: false,
+      profileSynced: true,
+      username: "zora_agent",
+      cooldown: false,
+      walletSource: "/home/u/.config/zora/wallet.json",
+    });
+  });
+
+  it("still succeeds (profileSynced=false) when the profile sync fails", async () => {
+    vi.mocked(syncSocials).mockRejectedValue(new Error("graphql boom"));
+    const log = captureLog();
+    await runAgent(["socials", "link", "twitter", "--json"]);
+    const parsed = JSON.parse(log.output());
+    log.restore();
+    // The Privy link succeeded, so the command does not hard-fail.
+    expect(linkOAuthWithCode).toHaveBeenCalled();
+    expect(parsed).toMatchObject({ provider: "twitter", profileSynced: false });
+  });
+
+  it("reports not-yet-synced when the username hasn't propagated", async () => {
+    // socialAccounts came back, but the just-linked username is still absent —
+    // profileSynced must be false (not a premature success) and username null.
+    vi.mocked(syncSocials).mockResolvedValue({
+      forceUnlinkedSocials: [],
+      usernames: {},
+    });
+    const log = captureLog();
+    await runAgent(["socials", "link", "twitter", "--json"]);
+    const parsed = JSON.parse(log.output());
+    log.restore();
+    expect(parsed).toMatchObject({
+      provider: "twitter",
+      profileSynced: false,
+      username: null,
+      cooldown: false,
+    });
+  });
+
+  it("flags a cooldown when the provider is force-unlinked by the sync", async () => {
+    vi.mocked(syncSocials).mockResolvedValue({
+      forceUnlinkedSocials: ["TWITTER"],
+      usernames: {},
+    });
+    const log = captureLog();
+    await runAgent(["socials", "link", "twitter", "--json"]);
+    const parsed = JSON.parse(log.output());
+    log.restore();
+    expect(parsed).toMatchObject({
+      provider: "twitter",
+      profileSynced: false,
+      cooldown: true,
+    });
+  });
+
+  it("does not open a browser in JSON mode but prints the URL to stderr", async () => {
+    const log = captureLog();
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    await runAgent(["socials", "link", "twitter", "--json"]);
+    const stderr = errSpy.mock.calls.map((c) => c.join(" ")).join("\n");
+    errSpy.mockRestore();
+    log.restore();
+    expect(openBrowser).not.toHaveBeenCalled();
+    // The authorization URL must still be surfaced (on stderr, so stdout stays
+    // pure JSON) for whoever completes the browser approval.
+    expect(stderr).toContain("https://x.com/i/oauth2/authorize?x=1");
+  });
+
+  it("skips the OAuth flow when already linked, but still re-syncs the profile", async () => {
+    vi.mocked(hasLinkedOAuthProvider).mockReturnValue(true);
+    const log = captureLog();
+    await runAgent(["socials", "link", "twitter", "--json"]);
+    const parsed = JSON.parse(log.output());
+    log.restore();
+
+    // No browser/OAuth flow…
+    expect(startOAuthCallbackServer).not.toHaveBeenCalled();
+    expect(initOAuthLink).not.toHaveBeenCalled();
+    // …but the profile sync still runs, so a linked-in-Privy-but-not-on-Zora
+    // account can be healed by re-running.
+    expect(syncSocials).toHaveBeenCalledWith(
+      PRIVY_ACCOUNT.accessToken,
+      expect.objectContaining({ awaitPlatform: "twitter" }),
+    );
+    expect(parsed).toMatchObject({
+      provider: "twitter",
+      alreadyLinked: true,
+      profileSynced: true,
+    });
+  });
+
+  it("rejects an unsupported provider", async () => {
+    await expect(runAgent(["socials", "link", "myspace"])).rejects.toThrow(
+      "process.exit(1)",
+    );
+    expect(createPrivyAccount).not.toHaveBeenCalled();
+  });
+
+  it("fails (and closes the server) on a state mismatch", async () => {
+    waitForCallbackMock.mockResolvedValue({
+      code: "auth-code",
+      state: "tampered",
+      provider: "twitter",
+    });
+    await expect(runAgent(["socials", "link", "twitter"])).rejects.toThrow(
+      "process.exit(1)",
+    );
+    expect(linkOAuthWithCode).not.toHaveBeenCalled();
+    expect(closeMock).toHaveBeenCalled();
+  });
+
+  it("errors when the callback port is in use", async () => {
+    vi.mocked(startOAuthCallbackServer).mockRejectedValue(
+      Object.assign(new Error("in use"), { code: "EADDRINUSE" }),
+    );
+    await expect(runAgent(["socials", "link", "twitter"])).rejects.toThrow(
+      "process.exit(1)",
+    );
+    expect(initOAuthLink).not.toHaveBeenCalled();
+  });
+
+  it("errors (never generates a wallet) when no account is configured", async () => {
+    vi.mocked(getPrivateKey).mockReturnValue(undefined);
+    await expect(runAgent(["socials", "link", "twitter"])).rejects.toThrow(
+      "process.exit(1)",
+    );
+    expect(createPrivyAccount).not.toHaveBeenCalled();
+    expect(savePrivateKey).not.toHaveBeenCalled();
+  });
+});
+
+describe("zora agent socials list", () => {
+  const SESSION = {
+    address: "0xAbC0000000000000000000000000000000000001",
+    did: "did:privy:test123",
+    accessToken: "header.payload.signature",
+    isNewUser: false,
+    linkedAccounts: [],
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    delete process.env.ZORA_PRIVATE_KEY;
+    vi.mocked(getPrivateKey).mockReturnValue(SAVED_PK);
+    // list uses ensurePrivySession (cache→refresh→SIWE), not a full SIWE.
+    vi.mocked(ensurePrivySession).mockResolvedValue(SESSION);
+    vi.mocked(syncSocials).mockResolvedValue({
+      forceUnlinkedSocials: [],
+      usernames: { twitter: "zora_agent", farcaster: "zora" },
+    });
+  });
+
+  it("syncs first, then lists the linked socials (JSON)", async () => {
+    const log = captureLog();
+    await runAgent(["socials", "list", "--json"]);
+    const parsed = JSON.parse(log.output());
+    log.restore();
+
+    // It always syncs from Privy before reporting.
+    expect(syncSocials).toHaveBeenCalledWith(SESSION.accessToken);
+    expect(parsed).toMatchObject({
+      did: SESSION.did,
+      address: SESSION.address,
+      socials: [
+        { platform: "twitter", username: "zora_agent" },
+        { platform: "farcaster", username: "zora" },
+      ],
+      cooldown: [],
+    });
+  });
+
+  it("reports an empty list when nothing is linked", async () => {
+    vi.mocked(syncSocials).mockResolvedValue({
+      forceUnlinkedSocials: [],
+      usernames: {},
+    });
+    const log = captureLog();
+    await runAgent(["socials", "list", "--json"]);
+    const parsed = JSON.parse(log.output());
+    log.restore();
+    expect(parsed.socials).toEqual([]);
+  });
+
+  it("surfaces cooldown platforms", async () => {
+    vi.mocked(syncSocials).mockResolvedValue({
+      forceUnlinkedSocials: ["TWITTER"],
+      usernames: {},
+    });
+    const log = captureLog();
+    await runAgent(["socials", "list", "--json"]);
+    const parsed = JSON.parse(log.output());
+    log.restore();
+    expect(parsed.cooldown).toEqual(["TWITTER"]);
+  });
+
+  it("errors if the sync/read fails", async () => {
+    vi.mocked(syncSocials).mockRejectedValue(new Error("graphql down"));
+    await expect(runAgent(["socials", "list"])).rejects.toThrow(
+      "process.exit(1)",
+    );
+  });
+
+  it("errors (never generates a wallet) when no account is configured", async () => {
+    vi.mocked(getPrivateKey).mockReturnValue(undefined);
+    await expect(runAgent(["socials", "list"])).rejects.toThrow(
+      "process.exit(1)",
+    );
+    expect(ensurePrivySession).not.toHaveBeenCalled();
+    expect(savePrivateKey).not.toHaveBeenCalled();
   });
 });
 

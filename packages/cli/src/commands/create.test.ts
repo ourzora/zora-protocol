@@ -43,7 +43,8 @@ import {
 import { getApiKey } from "../lib/config.js";
 import { createClients, resolveAccounts } from "../lib/wallet.js";
 import type { SmartWalletAccount } from "../lib/account/index.js";
-import { createCommand } from "./create.js";
+import { createCommand, coinCreateCommand } from "./create.js";
+import { coinCommand } from "./coin.js";
 
 const ACCOUNT_ADDRESS = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045" as Address;
 const SMART_WALLET_ADDRESS =
@@ -60,6 +61,18 @@ function runCreate(args: string[]) {
 function runCreateJson(args: string[]) {
   const program = createProgram(createCommand);
   return program.parseAsync(["create", ...args, "--json"], { from: "user" });
+}
+
+function runCoinCreate(args: string[]) {
+  const program = createProgram(coinCommand);
+  return program.parseAsync(["coin", "create", ...args], { from: "user" });
+}
+
+function runCoinCreateJson(args: string[]) {
+  const program = createProgram(coinCommand);
+  return program.parseAsync(["coin", "create", ...args, "--json"], {
+    from: "user",
+  });
 }
 
 describe("create command", () => {
@@ -395,5 +408,72 @@ describe("create command", () => {
       "--yes",
     ]);
     expect(metadataBuilder.withDescription).not.toHaveBeenCalled();
+  });
+
+  // --- Deprecation alias ---
+
+  it("prints a deprecation notice steering to `coin create`", async () => {
+    await runCreate(FULL_ARGS);
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("`zora coin create`"),
+    );
+    expect(createCoin).toHaveBeenCalledOnce();
+  });
+
+  it("suppresses the deprecation notice in --json mode", async () => {
+    await runCreateJson([
+      "--name",
+      "My Coin",
+      "--symbol",
+      "MYC",
+      "--image",
+      "/tmp/image.png",
+    ]);
+    expect(errorSpy).not.toHaveBeenCalledWith(
+      expect.stringContaining("deprecated"),
+    );
+  });
+
+  // --- `coin create` (canonical) ---
+
+  it("creates a coin via `coin create` with no deprecation notice", async () => {
+    await runCoinCreate(FULL_ARGS);
+
+    expect(createCoin).toHaveBeenCalledOnce();
+    expect(errorSpy).not.toHaveBeenCalledWith(
+      expect.stringContaining("deprecated"),
+    );
+
+    const call = vi.mocked(createCoin).mock.calls[0]![0];
+    expect(call.call.creator).toBe(ACCOUNT_ADDRESS);
+    expect(call.call.currency).toBe("ZORA");
+  });
+
+  it("outputs JSON from `coin create` when --json is set", async () => {
+    await runCoinCreateJson([
+      "--name",
+      "My Coin",
+      "--symbol",
+      "MYC",
+      "--image",
+      "/tmp/image.png",
+    ]);
+
+    const output = parsedOutput();
+    expect(output).toMatchObject({
+      action: "create",
+      name: "My Coin",
+      symbol: "MYC",
+      currency: "ZORA",
+      address: COIN_ADDRESS,
+      tx: TX_HASH,
+      walletType: "eoa",
+    });
+  });
+
+  it("shares the same flags between `create` and `coin create`", () => {
+    const flagNames = (cmd: typeof createCommand) =>
+      cmd.options.map((o) => o.long).sort();
+    expect(flagNames(coinCreateCommand)).toEqual(flagNames(createCommand));
   });
 });

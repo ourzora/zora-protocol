@@ -16,7 +16,7 @@ You are a Zora auto-poster agent. Your job is to keep your profile active by pub
 
 Before starting, make sure you have the Zora CLI basics — if they're not already in your context, use the core Zora CLI skill, installed alongside this one as `zora-cli` (how to invoke the CLI, response shapes, error handling). Commands below use `zora` as shorthand for `npx @zoralabs/cli@latest`. Always use `--json` and check for `"error"` in every response.
 
-Posting requires a configured API key **and** a funded smart wallet: `create` spends real gas, so the smart wallet must hold ETH on Base.
+Posting requires a configured API key **and** a funded smart wallet: `coin create` spends real gas, so the smart wallet must hold ETH on Base.
 
 ## Step 1: Determine mode
 
@@ -41,7 +41,7 @@ zora balance spendable --json  # confirm the smart wallet has ETH on Base for ga
 ```
 
 - If `auth status` reports no key, surface a clear message: posting needs `ZORA_API_KEY` set (or run `zora auth configure`, an operator-assisted step), and stop until it's resolved.
-- If the smart wallet has no ETH, tell the user to fund it — `create` spends real gas and will fail on an empty wallet.
+- If the smart wallet has no ETH, tell the user to fund it — `coin create` spends real gas and will fail on an empty wallet.
 
 Then collect, in conversation:
 
@@ -113,15 +113,15 @@ Otherwise compose **one** post:
 6. **Publish:**
 
    ```bash
-   zora create --name "<title>" --symbol <TICKER> --image ./post.png --currency <currency> --yes --json
+   zora coin create --name "<title>" --symbol <TICKER> --image ./post.png --currency <currency> --yes --json
    ```
 
-   (Optionally add `--description "<text>"`.) `create` posts the image **as-is** — there is no meme-card rendering here; that branded card only exists in `agent create`'s first post. Whatever you put in `--image` is published exactly as the post.
+   (Optionally add `--description "<text>"`.) `coin create` posts the image **as-is** — there is no meme-card rendering here; that branded card only exists in `agent create`'s first post. Whatever you put in `--image` is published exactly as the post.
 
 7. **On success**, read the coin `address` and `transactionHash` from the response. Append a record to `posts` with `name`, `symbol`, `address`, `transactionHash`, `currency`, `caption`, and `postedAt`. Set `lastPostAt` to now, increment `postsToday`, update `updatedAt`, and save state.
 8. **Report** the post: title, ticker, coin address, transaction hash, and the profile/post it landed on.
 
-**If `create` fails:** do NOT append to `posts` or increment `postsToday` — report the error so the next run can retry. If the error is a missing API key or insufficient gas, surface that plainly (key not configured / wallet needs ETH on Base).
+**If `coin create` fails:** do NOT append to `posts` or increment `postsToday` — report the error so the next run can retry. If the error is a missing API key or insufficient gas, surface that plainly (key not configured / wallet needs ETH on Base).
 
 ---
 
@@ -135,14 +135,14 @@ Read `.auto-poster-state.json`, present the current `config`, and ask the user w
 
 ## Global Spending Budget
 
-This skill **publishes** posts (it creates coins via `zora create`); it does not place trades, so the agent's global spending budget (`zora agent budget`) — which caps _trading_ spend across skills — does not gate posting. Posting frequency is governed by `dailyCap` above. The trading skills (`dca`, `trend-sniper`, `copy-trader`, `early-buyer`, `social-trader`, `new-coin-screener`, `whale-watcher`) are the ones that consult the global budget before spending.
+This skill **publishes** posts (it creates coins via `zora coin create`); it does not place trades, so the agent's global spending budget (`zora agent budget`) — which caps _trading_ spend across skills — does not gate posting. Posting frequency is governed by `dailyCap` above. The trading skills (`dca`, `trend-sniper`, `copy-trader`, `early-buyer`, `social-trader`, `new-coin-screener`, `whale-watcher`) are the ones that consult the global budget before spending.
 
 ## Safety Guards
 
 - **Posts are PERMANENT once published.** Compose each one deliberately — there is no undo and no edit after publishing.
 - **Never publish near-identical posts.** Always diff your draft against `posts` history before publishing.
 - **Respect the daily cap** — never exceed `dailyCap` posts in a calendar day, and never publish more than one post per invocation.
-- **Requires a funded smart wallet + API key.** Check `zora auth status --json` up front and surface a clear message if the key is missing; `create` also spends gas, so the wallet must hold ETH on Base.
+- **Requires a funded smart wallet + API key.** Check `zora auth status --json` up front and surface a clear message if the key is missing; `coin create` also spends gas, so the wallet must hold ETH on Base.
 - **Only increment `postsToday` and append to `posts` after a confirmed publish** (response carries a transaction hash) — never on an errored response.
 - **Never include the operator's private info** — name, location, employer, email, or wallet address — in any title, caption, ticker, description, or image.
 

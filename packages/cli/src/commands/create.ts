@@ -21,17 +21,9 @@ import { getJson, outputErrorAndExit, outputJson } from "../lib/output.js";
 import { safeExit, SUCCESS } from "../lib/exit.js";
 import { track, shutdownAnalytics } from "../lib/analytics.js";
 import { gasErrorSuggestion } from "../lib/gas.js";
+import { imageMimeForPath } from "../lib/image.js";
 import { validateTicker } from "../lib/ticker.js";
 import { serializeError } from "../lib/errors.js";
-
-/** Image extensions accepted by the metadata uploader, mapped to their MIME type. */
-const IMAGE_MIME_BY_EXT: Record<string, string> = {
-  ".png": "image/png",
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".gif": "image/gif",
-  ".svg": "image/svg+xml",
-};
 
 const VALID_CURRENCIES = CreateConstants.ContentCoinCurrencies;
 
@@ -106,246 +98,275 @@ async function resolveField(
   return input({ message, required });
 }
 
-export const createCommand = new Command("create")
-  .description("Create a coin (post)")
-  .option("--name <name>", "Coin name")
-  .option("--symbol <symbol>", "Coin symbol (ticker)")
-  .option("--description <description>", "Coin description")
-  .option("--image <path>", "Path to a local image file to upload")
-  .option(
-    "--currency <currency>",
-    "Backing currency: ZORA, ETH, CREATOR_COIN, CREATOR_COIN_OR_ZORA (prompts if omitted)",
-  )
-  .option("--yes", "Skip confirmation and create directly")
-  .action(async function (
-    this: Command,
-    opts: {
-      name?: string;
-      symbol?: string;
-      description?: string;
-      image?: string;
-      currency?: string;
-      yes?: boolean;
-    },
-  ) {
-    const json = getJson(this);
+export interface CreateOptions {
+  name?: string;
+  symbol?: string;
+  description?: string;
+  image?: string;
+  currency?: string;
+  yes?: boolean;
+}
 
-    // Uploading metadata to Zora's IPFS uploader requires an API key.
-    const apiKey = getApiKey();
-    if (!apiKey) {
-      return outputErrorAndExit(
-        json,
-        "An API key is required to create a coin.",
-        "Run 'zora auth configure' to set your API key.",
-      );
-    }
-    setApiKey(apiKey);
+/**
+ * Registers the shared coin-creation flags on a command. Used by both the
+ * canonical `coin create` subcommand and the deprecated top-level `create`
+ * alias so the two stay flag-for-flag identical.
+ */
+function applyCreateOptions(cmd: Command): Command {
+  return cmd
+    .option("--name <name>", "Coin name")
+    .option("--symbol <symbol>", "Coin symbol (ticker)")
+    .option("--description <description>", "Coin description")
+    .option("--image <path>", "Path to a local image file to upload")
+    .option(
+      "--currency <currency>",
+      "Backing currency: ZORA, ETH, CREATOR_COIN, CREATOR_COIN_OR_ZORA (prompts if omitted)",
+    )
+    .option("--yes", "Skip confirmation and create directly");
+}
 
-    // Collect coin details, prompting for any not provided on the command line.
-    const name = await resolveField(opts.name, {
+/**
+ * Creates a coin (post): uploads the image + metadata to IPFS and deploys via
+ * the smart wallet (preferred) or EOA. Bound as the action for both the
+ * `coin create` subcommand and the deprecated `create` alias.
+ */
+async function runCreate(this: Command, opts: CreateOptions) {
+  const json = getJson(this);
+
+  // Uploading metadata to Zora's IPFS uploader requires an API key.
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    return outputErrorAndExit(
       json,
-      message: "Coin name:",
-      flag: "--name",
-    });
-    const symbol = await resolveField(opts.symbol, {
-      json,
-      message: "Coin symbol (ticker):",
-      flag: "--symbol",
-    });
-
-    // Reject a ticker the platform would refuse (too short/long, or with
-    // disallowed characters) before uploading metadata or touching the chain.
-    const tickerError = validateTicker(symbol);
-    if (tickerError) {
-      return outputErrorAndExit(json, tickerError, "Pass a valid --symbol.");
-    }
-    const description = await resolveField(opts.description, {
-      json,
-      message: "Description (optional):",
-      flag: "--description",
-      required: false,
-    });
-    const imagePath = await resolveField(opts.image, {
-      json,
-      message: "Path to image file:",
-      flag: "--image",
-    });
-    const currency = await resolveCurrency(opts.currency, json);
-
-    // Verify the image exists and is a supported type before doing any work.
-    if (!existsSync(imagePath)) {
-      return outputErrorAndExit(
-        json,
-        `Image file not found: ${imagePath}`,
-        "Provide a path to an existing local image file.",
-      );
-    }
-
-    const ext = extname(imagePath).toLowerCase();
-    const mimeType = IMAGE_MIME_BY_EXT[ext];
-    if (!mimeType) {
-      return outputErrorAndExit(
-        json,
-        `Unsupported image type: ${ext || "(no extension)"}`,
-        "Supported types: PNG, JPEG, JPG, GIF, SVG.",
-      );
-    }
-
-    // Prefer the smart wallet path when one is configured, otherwise use the EOA.
-    const { privateKeyAccount, smartWalletAccount } = await resolveAccounts();
-    const { publicClient, walletClient, bundlerClient } = createClients(
-      privateKeyAccount,
-      smartWalletAccount,
+      "An API key is required to create a coin.",
+      "Run 'zora auth configure' to set your API key.",
     );
+  }
+  setApiKey(apiKey);
 
-    const creator: Address =
-      smartWalletAccount?.address ?? privateKeyAccount.address;
-    const usingSmartWallet = !!smartWalletAccount;
+  // Collect coin details, prompting for any not provided on the command line.
+  const name = await resolveField(opts.name, {
+    json,
+    message: "Coin name:",
+    flag: "--name",
+  });
+  const symbol = await resolveField(opts.symbol, {
+    json,
+    message: "Coin symbol (ticker):",
+    flag: "--symbol",
+  });
 
-    if (usingSmartWallet && !bundlerClient) {
-      return outputErrorAndExit(
-        json,
-        "Failed to obtain bundler client for your smart wallet. Please try again. If the problem persists, ensure your smart wallet is setup correctly.",
-      );
+  // Reject a ticker the platform would refuse (too short/long, or with
+  // disallowed characters) before uploading metadata or touching the chain.
+  const tickerError = validateTicker(symbol);
+  if (tickerError) {
+    return outputErrorAndExit(json, tickerError, "Pass a valid --symbol.");
+  }
+  const description = await resolveField(opts.description, {
+    json,
+    message: "Description (optional):",
+    flag: "--description",
+    required: false,
+  });
+  const imagePath = await resolveField(opts.image, {
+    json,
+    message: "Path to image file:",
+    flag: "--image",
+  });
+  const currency = await resolveCurrency(opts.currency, json);
+
+  // Verify the image exists and is a supported type before doing any work.
+  if (!existsSync(imagePath)) {
+    return outputErrorAndExit(
+      json,
+      `Image file not found: ${imagePath}`,
+      "Provide a path to an existing local image file.",
+    );
+  }
+
+  const mimeType = imageMimeForPath(imagePath);
+  if (!mimeType) {
+    return outputErrorAndExit(
+      json,
+      `Unsupported image type: ${extname(imagePath).toLowerCase() || "(no extension)"}`,
+      "Supported types: PNG, JPEG, JPG, GIF, SVG.",
+    );
+  }
+
+  // Prefer the smart wallet path when one is configured, otherwise use the EOA.
+  const { privateKeyAccount, smartWalletAccount } = await resolveAccounts();
+  const { publicClient, walletClient, bundlerClient } = createClients(
+    privateKeyAccount,
+    smartWalletAccount,
+  );
+
+  const creator: Address =
+    smartWalletAccount?.address ?? privateKeyAccount.address;
+  const usingSmartWallet = !!smartWalletAccount;
+
+  if (usingSmartWallet && !bundlerClient) {
+    return outputErrorAndExit(
+      json,
+      "Failed to obtain bundler client for your smart wallet. Please try again. If the problem persists, ensure your smart wallet is setup correctly.",
+    );
+  }
+
+  if (!opts.yes && !json) {
+    console.log(`\n Create coin\n`);
+    console.log(`   Name         ${name}`);
+    console.log(`   Symbol       ${symbol}`);
+    if (description) {
+      console.log(`   Description  ${description}`);
+    }
+    console.log(`   Image        ${imagePath}`);
+    console.log(`   Currency     ${currency}`);
+    console.log(
+      `   Creator      ${creator} (${usingSmartWallet ? "smart wallet" : "EOA"})`,
+    );
+    console.log("");
+
+    const ok = await confirm({ message: "Confirm?", default: false });
+    if (!ok) {
+      console.error("Aborted.");
+      return safeExit(SUCCESS);
+    }
+  }
+
+  // Upload the image and metadata to IPFS.
+  let metadataParams;
+  try {
+    const imageFile = new File([readFileSync(imagePath)], basename(imagePath), {
+      type: mimeType,
+    });
+
+    const builder = createMetadataBuilder()
+      .withName(name)
+      .withSymbol(symbol)
+      .withImage(imageFile);
+
+    if (description) {
+      builder.withDescription(description);
     }
 
-    if (!opts.yes && !json) {
-      console.log(`\n Create coin\n`);
-      console.log(`   Name         ${name}`);
-      console.log(`   Symbol       ${symbol}`);
-      if (description) {
-        console.log(`   Description  ${description}`);
-      }
-      console.log(`   Image        ${imagePath}`);
-      console.log(`   Currency     ${currency}`);
-      console.log(
-        `   Creator      ${creator} (${usingSmartWallet ? "smart wallet" : "EOA"})`,
-      );
-      console.log("");
-
-      const ok = await confirm({ message: "Confirm?", default: false });
-      if (!ok) {
-        console.error("Aborted.");
-        return safeExit(SUCCESS);
-      }
-    }
-
-    // Upload the image and metadata to IPFS.
-    let metadataParams;
-    try {
-      const imageFile = new File(
-        [readFileSync(imagePath)],
-        basename(imagePath),
-        {
-          type: mimeType,
-        },
-      );
-
-      const builder = createMetadataBuilder()
-        .withName(name)
-        .withSymbol(symbol)
-        .withImage(imageFile);
-
-      if (description) {
-        builder.withDescription(description);
-      }
-
-      const { createMetadataParameters } = await builder.upload(
-        createZoraUploaderForCreator(creator),
-      );
-      metadataParams = createMetadataParameters;
-    } catch (err) {
-      track("cli_create", {
-        currency,
-        wallet_type: usingSmartWallet ? "smart_wallet" : "eoa",
-        output_format: json ? "json" : "static",
-        success: false,
-        stage: "upload",
-        error_type: err instanceof Error ? err.constructor.name : "unknown",
-        error_message: err instanceof Error ? err.message : String(err),
-        error: serializeError(err),
-      });
-      await shutdownAnalytics();
-      return outputErrorAndExit(
-        json,
-        `Failed to upload metadata: ${err instanceof Error ? err.message : String(err)}`,
-      );
-    }
-
-    // Deploy the coin via the appropriate wallet path.
-    let result: Awaited<
-      ReturnType<typeof createCoin | typeof createCoinSmartWallet>
-    >;
-    try {
-      const call = {
-        creator,
-        name: metadataParams.name,
-        symbol: metadataParams.symbol,
-        metadata: metadataParams.metadata,
-        currency,
-        chainId: base.id,
-      };
-
-      result = usingSmartWallet
-        ? await createCoinSmartWallet({
-            call,
-            bundlerClient: bundlerClient!,
-            publicClient,
-          })
-        : await createCoin({
-            call,
-            walletClient,
-            publicClient,
-            options: { account: privateKeyAccount },
-          });
-    } catch (err) {
-      track("cli_create", {
-        currency,
-        wallet_type: usingSmartWallet ? "smart_wallet" : "eoa",
-        output_format: json ? "json" : "static",
-        success: false,
-        stage: "deploy",
-        error_type: err instanceof Error ? err.constructor.name : "unknown",
-        error_message: err instanceof Error ? err.message : String(err),
-        error: serializeError(err),
-      });
-      await shutdownAnalytics();
-      return outputErrorAndExit(
-        json,
-        `Failed to create coin: ${err instanceof Error ? err.message : String(err)}`,
-        gasErrorSuggestion(err, smartWalletAccount ?? privateKeyAccount),
-      );
-    }
-
-    const coinAddress = result.address ?? null;
-    const txHash = result.hash ?? null;
-
-    if (json) {
-      outputJson({
-        action: "create",
-        name,
-        symbol,
-        currency,
-        address: coinAddress,
-        creator,
-        walletType: usingSmartWallet ? "smart_wallet" : "eoa",
-        tx: txHash,
-      });
-    } else {
-      console.log(`\n Created ${name} (${symbol})\n`);
-      console.log(`   Address      ${coinAddress ?? "unknown"}`);
-      console.log(`   Tx           ${txHash ?? "unknown"}\n`);
-    }
-
+    const { createMetadataParameters } = await builder.upload(
+      createZoraUploaderForCreator(creator),
+    );
+    metadataParams = createMetadataParameters;
+  } catch (err) {
     track("cli_create", {
       currency,
-      coin_address: coinAddress,
-      coin_name: name,
-      coin_symbol: symbol,
       wallet_type: usingSmartWallet ? "smart_wallet" : "eoa",
-      transactionHash: txHash,
       output_format: json ? "json" : "static",
-      success: true,
-      tx_hash: txHash,
+      success: false,
+      stage: "upload",
+      error_type: err instanceof Error ? err.constructor.name : "unknown",
+      error_message: err instanceof Error ? err.message : String(err),
+      error: serializeError(err),
     });
+    await shutdownAnalytics();
+    return outputErrorAndExit(
+      json,
+      `Failed to upload metadata: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
+  // Deploy the coin via the appropriate wallet path.
+  let result: Awaited<
+    ReturnType<typeof createCoin | typeof createCoinSmartWallet>
+  >;
+  try {
+    const call = {
+      creator,
+      name: metadataParams.name,
+      symbol: metadataParams.symbol,
+      metadata: metadataParams.metadata,
+      currency,
+      chainId: base.id,
+    };
+
+    result = usingSmartWallet
+      ? await createCoinSmartWallet({
+          call,
+          bundlerClient: bundlerClient!,
+          publicClient,
+        })
+      : await createCoin({
+          call,
+          walletClient,
+          publicClient,
+          options: { account: privateKeyAccount },
+        });
+  } catch (err) {
+    track("cli_create", {
+      currency,
+      wallet_type: usingSmartWallet ? "smart_wallet" : "eoa",
+      output_format: json ? "json" : "static",
+      success: false,
+      stage: "deploy",
+      error_type: err instanceof Error ? err.constructor.name : "unknown",
+      error_message: err instanceof Error ? err.message : String(err),
+      error: serializeError(err),
+    });
+    await shutdownAnalytics();
+    return outputErrorAndExit(
+      json,
+      `Failed to create coin: ${err instanceof Error ? err.message : String(err)}`,
+      gasErrorSuggestion(err, smartWalletAccount ?? privateKeyAccount),
+    );
+  }
+
+  const coinAddress = result.address ?? null;
+  const txHash = result.hash ?? null;
+
+  if (json) {
+    outputJson({
+      action: "create",
+      name,
+      symbol,
+      currency,
+      address: coinAddress,
+      creator,
+      walletType: usingSmartWallet ? "smart_wallet" : "eoa",
+      tx: txHash,
+    });
+  } else {
+    console.log(`\n Created ${name} (${symbol})\n`);
+    console.log(`   Address      ${coinAddress ?? "unknown"}`);
+    console.log(`   Tx           ${txHash ?? "unknown"}\n`);
+  }
+
+  track("cli_create", {
+    currency,
+    coin_address: coinAddress,
+    coin_name: name,
+    coin_symbol: symbol,
+    wallet_type: usingSmartWallet ? "smart_wallet" : "eoa",
+    transactionHash: txHash,
+    output_format: json ? "json" : "static",
+    success: true,
+    tx_hash: txHash,
   });
+}
+
+/** Canonical command: `zora coin create`. */
+export const coinCreateCommand = applyCreateOptions(
+  new Command("create").description("Create a coin (post)"),
+).action(runCreate);
+
+/**
+ * Deprecated alias: `zora create`. Kept working with identical behavior, but
+ * prints a one-line migration notice (stderr, suppressed in --json so machine
+ * output stays clean) pointing at `coin create`.
+ */
+export const createCommand = applyCreateOptions(
+  new Command("create").description(
+    "Create a coin (post) (deprecated: use `coin create`)",
+  ),
+).action(async function (this: Command, opts: CreateOptions) {
+  if (!getJson(this)) {
+    console.error(
+      "\x1b[33m⚠\x1b[0m `zora create` is deprecated and will be removed in a future release. Use `zora coin create` instead.",
+    );
+  }
+  await runCreate.call(this, opts);
+});

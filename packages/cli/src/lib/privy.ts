@@ -1,3 +1,4 @@
+import { randomBytes, createHash } from "node:crypto";
 import { privateKeyToAccount } from "viem/accounts";
 import { createSiweMessage } from "viem/siwe";
 
@@ -8,6 +9,21 @@ import { createSiweMessage } from "viem/siwe";
  * belongs to this app, so this is the default for {@link createPrivyAccount}.
  */
 export const ZORA_PRIVY_APP_ID = "clpgf04wn04hnkw0fv1m11mnb";
+
+/**
+ * The Privy app client dedicated to the CLI's social-account linking flow.
+ *
+ * A Privy app can have several clients, each with its own allowed origins and
+ * cookie setting. Sent as the `privy-client-id` header, this selects the client
+ * configured for the CLI — cookie-enabled and listing the local OAuth callback
+ * (`http://localhost:8976`) as an allowed origin — rather than the web client.
+ * Keeping the whole link flow on this one client means the SIWE session cookie
+ * is valid at `oauth/link`, and the localhost redirect validates against its
+ * allowlist. Users belong to the app (not a client), so the linked account
+ * still appears everywhere the app is used.
+ */
+export const ZORA_PRIVY_CLI_CLIENT_ID =
+  "client-WY2f8mnC65aGnM2LmXpwBU5GqK3kxYqJoV87q7RUQLjF8";
 
 /** Default origin the SIWE message is scoped to (an allowed origin on the app). */
 export const DEFAULT_SIWE_ORIGIN = "https://zora.com";
@@ -30,6 +46,12 @@ export interface CreatePrivyAccountOptions {
   appId?: string;
   /** Origin the SIWE message is scoped to. Defaults to {@link DEFAULT_SIWE_ORIGIN}. */
   origin?: string;
+  /**
+   * Privy app client to target, sent as `privy-client-id`. Omit for the app's
+   * default client; set to {@link ZORA_PRIVY_CLI_CLIENT_ID} to sign in on the
+   * CLI client (so the session is valid for that client's `oauth/link`).
+   */
+  clientId?: string;
   /** EVM chain id for the SIWE message. Defaults to {@link DEFAULT_SIWE_CHAIN_ID}. */
   chainId?: number;
   /**
@@ -102,6 +124,12 @@ interface PrivyAuthPostOptions {
   /** Privy auth API base. */
   authBase: string;
   /**
+   * When set, sent as the `privy-client-id` header to target a specific app
+   * client (e.g. {@link ZORA_PRIVY_CLI_CLIENT_ID}). Omit to use the app's
+   * default client.
+   */
+  clientId?: string;
+  /**
    * When set, sent as `Authorization: Bearer <accessToken>` — required for
    * calls that act on the authenticated user (e.g. linking an email).
    */
@@ -138,6 +166,9 @@ async function privyAuthPost(
   }
   if (opts.cookie) {
     headers.Cookie = opts.cookie;
+  }
+  if (opts.clientId) {
+    headers["privy-client-id"] = opts.clientId;
   }
   const res = await fetch(`${opts.authBase}${path}`, {
     method: "POST",
@@ -220,6 +251,7 @@ export async function createPrivyAccount(
     privateKey,
     appId = ZORA_PRIVY_APP_ID,
     origin = DEFAULT_SIWE_ORIGIN,
+    clientId,
     chainId = DEFAULT_SIWE_CHAIN_ID,
     walletClientType = "metamask",
     connectorType = "injected",
@@ -232,7 +264,7 @@ export async function createPrivyAccount(
   // write endpoints (e.g. passwordless/link) can be called afterward.
   let cookie: string | undefined;
   const post = (path: string, body: unknown) =>
-    privyAuthPost(path, body, { appId, origin, authBase, cookie });
+    privyAuthPost(path, body, { appId, origin, authBase, clientId, cookie });
 
   const init = await post("/api/v1/siwe/init", { address: account.address });
   if (!init.ok || !init.json?.nonce) {
@@ -586,4 +618,265 @@ export function hasLinkedEmail(
   return linkedAccounts.some(
     (a) => a.type === "email" && a.address?.toLowerCase() === target,
   );
+}
+
+// ---------------------------------------------------------------------------
+// Social (OAuth) account linking
+//
+// Linking a Twitter/X, Instagram, or TikTok account is a PKCE OAuth flow over
+// the same `auth.privy.io` REST endpoints the browser SDK uses:
+//
+//   1. POST /api/v1/oauth/init  → returns the provider's authorization URL.
+//   2. The user authorizes in a browser; Privy redirects back to `redirect_to`
+//      with `privy_oauth_code`, `privy_oauth_state`, and `privy_oauth_provider`.
+//   3. POST /api/v1/oauth/link  → attaches the provider to the signed-in user.
+//
+// Step 3 is authenticated exactly like `passwordless/link` (Bearer access
+// token + the SIWE session cookie), so it reuses {@link privyAuthPost}.
+// ---------------------------------------------------------------------------
+
+/** A social provider the CLI can link, mapped to its Privy identifiers. */
+export interface SocialProvider {
+  /** Value sent to Privy as the `provider` in the OAuth flow. */
+  privyProvider: string;
+  /** The `type` Privy records in `linkedAccounts` once the account is linked. */
+  linkedAccountType: string;
+  /**
+   * The Zora `ESocialPlatform` enum value, used to read this provider out of the
+   * `updateSocials` mutation's `forceUnlinkedSocials` (which is returned uppercase).
+   */
+  platform: string;
+  /** Human-friendly label for CLI output. */
+  label: string;
+}
+
+/**
+ * The social providers `zora agent link <provider>` supports, keyed by the name
+ * the user types. Add an entry to support another Privy OAuth provider — the
+ * flow itself is provider-agnostic.
+ */
+// Instagram is intentionally absent: Zora doesn't link Instagram via Privy
+// OAuth — it uses a separate bio-URL verification flow (`startInstagramVerificationJob`),
+// and `updateSocials` does not sync Instagram from Privy. Linking it here would
+// succeed in Privy but never appear on the Zora profile. See PROTOCOL_KNOWLEDGE.md.
+export const SOCIAL_PROVIDERS: Record<string, SocialProvider> = {
+  twitter: {
+    privyProvider: "twitter",
+    linkedAccountType: "twitter_oauth",
+    platform: "TWITTER",
+    label: "Twitter/X",
+  },
+  tiktok: {
+    privyProvider: "tiktok",
+    linkedAccountType: "tiktok_oauth",
+    platform: "TIKTOK",
+    label: "TikTok",
+  },
+};
+
+/** Resolve a user-typed provider name (case/`@`-insensitive) to a {@link SocialProvider}. */
+export function resolveSocialProvider(
+  name: string,
+): SocialProvider | undefined {
+  return SOCIAL_PROVIDERS[name.trim().toLowerCase().replace(/^@/, "")];
+}
+
+/** Base64url-encode a buffer (no padding) — the encoding Privy's PKCE uses. */
+function base64url(buf: Buffer): string {
+  return buf.toString("base64url");
+}
+
+/**
+ * A PKCE code verifier: base64url of 36 random bytes, mirroring the Privy SDK
+ * (`pkce.mjs`). Kept secret by the client and replayed at the link step.
+ */
+export function createCodeVerifier(): string {
+  return base64url(randomBytes(36));
+}
+
+/** A CSRF state token: base64url of 36 random bytes, as the Privy SDK generates. */
+export function createStateCode(): string {
+  return base64url(randomBytes(36));
+}
+
+/**
+ * Derive the PKCE `code_challenge` from a verifier: base64url(SHA-256(verifier)),
+ * matching Privy's `deriveCodeChallengeFromCodeVerifier` (S256). The verifier is
+ * hashed as a UTF-8 string, not as its decoded bytes.
+ */
+export function deriveCodeChallenge(codeVerifier: string): string {
+  return base64url(createHash("sha256").update(codeVerifier, "utf8").digest());
+}
+
+export interface InitOAuthLinkOptions {
+  /** Privy provider id (e.g. `"twitter"`). See {@link SocialProvider.privyProvider}. */
+  provider: string;
+  /** URL Privy redirects the browser to after the user authorizes (the CLI's local callback). */
+  redirectTo: string;
+  /** Privy session access token, when linking to an existing user. */
+  accessToken?: string;
+  /** Privy session cookie from {@link createPrivyAccount}. */
+  cookie?: string;
+  /** Privy app id. Defaults to {@link ZORA_PRIVY_APP_ID}. */
+  appId?: string;
+  /** Origin the request is scoped to. Defaults to {@link DEFAULT_SIWE_ORIGIN}. */
+  origin?: string;
+  /** Privy app client to target, sent as `privy-client-id` (e.g. {@link ZORA_PRIVY_CLI_CLIENT_ID}). */
+  clientId?: string;
+  /** Privy auth API base. Override only for testing. */
+  authBase?: string;
+}
+
+export interface InitOAuthLinkResult {
+  /** The provider authorization URL the user must open to grant access. */
+  authorizationUrl: string;
+  /** The state token sent to Privy — compare it to the returned `privy_oauth_state`. */
+  stateCode: string;
+  /** The PKCE verifier to replay at {@link linkOAuthWithCode}. */
+  codeVerifier: string;
+}
+
+/**
+ * Begin a social-account OAuth flow: generate a PKCE verifier/challenge and a
+ * state token, then `POST /api/v1/oauth/init` to get the provider's
+ * authorization URL. The caller opens that URL in a browser and waits for the
+ * redirect back to `redirectTo`, then calls {@link linkOAuthWithCode}.
+ *
+ * @throws if Privy rejects the request (non-2xx) or returns no URL.
+ */
+export async function initOAuthLink(
+  opts: InitOAuthLinkOptions,
+): Promise<InitOAuthLinkResult> {
+  const {
+    provider,
+    redirectTo,
+    accessToken,
+    cookie,
+    appId = ZORA_PRIVY_APP_ID,
+    origin = DEFAULT_SIWE_ORIGIN,
+    clientId,
+    authBase = PRIVY_AUTH_BASE,
+  } = opts;
+
+  const codeVerifier = createCodeVerifier();
+  const stateCode = createStateCode();
+  const codeChallenge = deriveCodeChallenge(codeVerifier);
+
+  const res = await privyAuthPost(
+    "/api/v1/oauth/init",
+    {
+      redirect_to: redirectTo,
+      provider,
+      code_challenge: codeChallenge,
+      state_code: stateCode,
+    },
+    { appId, origin, authBase, clientId, accessToken, cookie },
+  );
+  if (!res.ok || typeof res.json?.url !== "string") {
+    throw new Error(
+      `Privy oauth/init failed (HTTP ${res.status})${privyErrorDetail(res.json)}.`,
+    );
+  }
+
+  return { authorizationUrl: res.json.url, stateCode, codeVerifier };
+}
+
+export interface LinkOAuthWithCodeOptions {
+  /** Privy session access token for the user the account is linked to. */
+  accessToken: string;
+  /** The `privy_oauth_code` returned to the redirect URL. */
+  authorizationCode: string;
+  /** The `privy_oauth_state` returned to the redirect URL (validated by the caller). */
+  stateCode: string;
+  /** The PKCE verifier from {@link initOAuthLink}. */
+  codeVerifier: string;
+  /**
+   * The Privy `code_type` discriminator for the authorization code. Defaults to
+   * `"raw"` — the value Privy's `oauth/link` requires for the `privy_oauth_code`
+   * returned to the redirect (confirmed empirically; the endpoint rejects other
+   * values with `Invalid enum value. Expected 'raw'`). Kept overridable in case
+   * Privy adds other accepted code types.
+   */
+  codeType?: string;
+  /** Privy app id. Defaults to {@link ZORA_PRIVY_APP_ID}. */
+  appId?: string;
+  /** Origin the request is scoped to. Defaults to {@link DEFAULT_SIWE_ORIGIN}. */
+  origin?: string;
+  /** Privy app client to target, sent as `privy-client-id` (e.g. {@link ZORA_PRIVY_CLI_CLIENT_ID}). */
+  clientId?: string;
+  /** Privy auth API base. Override only for testing. */
+  authBase?: string;
+  /** Session cookie from {@link createPrivyAccount} (Privy's authenticated session). */
+  cookie?: string;
+}
+
+export interface LinkOAuthResult {
+  /**
+   * The user's linked accounts after the social account was attached, when the
+   * link response includes them; `undefined` otherwise (the caller can refresh
+   * the session to read them). The link succeeding is the source of truth.
+   */
+  linkedAccounts?: PrivyLinkedAccount[];
+}
+
+/**
+ * Complete a social-account link: exchange the `privy_oauth_code` (with the PKCE
+ * verifier and state) at `POST /api/v1/oauth/link`, attaching the provider to
+ * the Privy user identified by the access token.
+ *
+ * @throws if the code/state is invalid, the account belongs to another user, or
+ *   Privy otherwise rejects the request (non-2xx).
+ */
+export async function linkOAuthWithCode(
+  opts: LinkOAuthWithCodeOptions,
+): Promise<LinkOAuthResult> {
+  const {
+    accessToken,
+    authorizationCode,
+    stateCode,
+    codeVerifier,
+    codeType = "raw",
+    appId = ZORA_PRIVY_APP_ID,
+    origin = DEFAULT_SIWE_ORIGIN,
+    clientId,
+    authBase = PRIVY_AUTH_BASE,
+    cookie,
+  } = opts;
+
+  const res = await privyAuthPost(
+    "/api/v1/oauth/link",
+    {
+      authorization_code: authorizationCode,
+      code_type: codeType,
+      state_code: stateCode,
+      code_verifier: codeVerifier,
+    },
+    { appId, origin, authBase, clientId, accessToken, cookie },
+  );
+  if (!res.ok) {
+    throw new Error(
+      `Privy oauth/link failed (HTTP ${res.status})${privyErrorDetail(res.json)}.`,
+    );
+  }
+
+  // The link response may carry the updated user; surface its linked accounts
+  // when present so the caller can avoid an extra session refresh.
+  const linkedAccounts = Array.isArray(res.json?.user?.linked_accounts)
+    ? (res.json.user.linked_accounts as PrivyLinkedAccount[])
+    : Array.isArray(res.json?.linked_accounts)
+      ? (res.json.linked_accounts as PrivyLinkedAccount[])
+      : undefined;
+
+  return { linkedAccounts };
+}
+
+/**
+ * Whether a social provider is already linked to these accounts, letting the
+ * caller skip the OAuth flow for an account already attached.
+ */
+export function hasLinkedOAuthProvider(
+  linkedAccounts: PrivyLinkedAccount[],
+  provider: SocialProvider,
+): boolean {
+  return linkedAccounts.some((a) => a.type === provider.linkedAccountType);
 }

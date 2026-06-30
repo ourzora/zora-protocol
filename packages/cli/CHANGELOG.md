@@ -1,8 +1,34 @@
 # @zoralabs/cli
 
+## 1.7.0
+
+### Minor Changes 
+
+- fb1bea727: Add `zora wallet connect` to control an existing Zora account from the CLI.
+
+  Paste the private key that controls a Zora account (the one exported from Zora's Privy-backed wallet settings) and the CLI derives the owner EOA, auto-discovers the account's Coinbase Smart Wallet on-chain — it's deployed deterministically from its owner, so no address lookup is needed — verifies the key owns it, and saves both the key and the smart wallet address to `wallet.json`. After connecting, `buy`, `sell`, and `coin create` act as the real account rather than the bare EOA.
+
+  This fills the gap left by `setup` / `wallet configure --import`, which store only the EOA and therefore trade from the key directly instead of the user's account ("found my EOA but not my smart wallet"). Pass `--smart-wallet <addr>` to override discovery for a non-standard owner set; overwriting a wallet that owns an agent is blocked by the same irreversible-overwrite guard as `setup --force`.
+
+- 00ce6d5b3: Add a `coin` command group with `coin create` for creating a coin (post), and deprecate the top-level `create` command in its favor.
+
+  `zora coin create` takes the same flags and behaves identically to the old `zora create`. The `create` command keeps working but now prints a deprecation notice (suppressed in `--json`) directing users to `coin create`, and will be removed in a future release.
+
+- f35994563: Add `zora coin edit` to edit a post's image and/or description (caption) from the CLI.
+
+  Mirrors the Zora app's "Edit post": it fetches the coin's current metadata, applies the changes, re-uploads the metadata to IPFS, and updates the coin's `contractURI` on-chain. The name/ticker is kept fixed (as the app does for coins), and only the coin's creator can edit it. Accepts a coin address or a creator/trend name; pass `--image`, `--description`, or both — whatever is omitted is preserved. No backend changes are required (this wires up the published `updateCoinURI`/`updateCoinURISmartWallet` actions from `@zoralabs/coins-sdk`).
+
+- 34a7696b8: Add `zora coin hide` and `zora coin unhide` to hide a coin (e.g. an unwanted airdrop or spam) from your holdings and profile across Zora, or reverse it.
+
+  Hiding is a personal preference scoped to your account — it doesn't move or burn the coin, and there's no holding requirement. Accepts a coin address or a creator/trend name. This wires up Zora's existing `addHiddenCreation`/`removeHiddenCreation` mutations (the same hide the Zora app applies), so no backend changes are required.
+
+- 8ab25cc77: Add `zora agent socials` to link and list social accounts (Twitter/X, TikTok) from the terminal
+
+  `zora agent socials link twitter` connects a social account: the CLI signs in with your wallet, opens the provider's authorization page in your browser, attaches the account to your Zora identity once you approve, and syncs it onto your Zora profile — so it shows up on web and mobile, the same as linking from the web app. `zora agent socials list` shows your linked accounts (syncing from Privy first).
+
 ## 1.6.2
 
-### Patch Changes 
+### Patch Changes
 
 - 9bc68ae99: Fix the `agent coin` help text to reference the correct flag. It previously pointed users to a non-existent `--with-coin` flag on `agent create`; creator coins are minted by default, so the guidance now correctly points to `--skip-coin`.
 

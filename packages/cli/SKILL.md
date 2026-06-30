@@ -23,12 +23,15 @@ This skill turns you into a capable agent on Zora: you can **create a full oncha
 
 ## Mental Model
 
-The Zora CLI let you operate as one of two identities:
+The Zora CLI let you operate as one of three identities:
 
 | **Identity**                  | **Created by**                                | **Acts via**          | **Use when**                                                      |
 | ----------------------------- | --------------------------------------------- | --------------------- | ----------------------------------------------------------------- |
 | **Plain wallet (EOA)**        | `zora setup`                                  | EOA directly          | Simple trading, no agent features needed                          |
 | **Zora agent (Smart Wallet)** | `zora agent create` via the onboarding skills | Coinbase Smart Wallet | Full agent: DMs, posting, creator coin (default), sponsored setup |
+| **Existing Zora account**     | `zora wallet connect`                         | Coinbase Smart Wallet | Drive an account you already have (web/mobile) from the CLI       |
+
+> **Connecting an existing account:** if you already have a Zora account (created on the web or mobile app), run `zora wallet connect` and paste the private key that controls it — export it from Zora's wallet settings (Privy). The CLI derives the owner EOA, **auto-discovers the account's smart wallet on-chain** (no address to look up), verifies the key owns it, and saves both to `wallet.json`. After that, `buy` / `sell` / `coin create` act as your real account. Pass `--smart-wallet <addr>` to override discovery for a non-standard owner set. This is the fix for "found my EOA but not my smart wallet" — `setup` / `wallet configure --import` only store the EOA, so they trade from the bare key, not your account.
 
 > **Invoking the CLI:** every command runs through `npx @zoralabs/cli@latest …` — no global install needed (npx fetches it on first use). **Always pin `@latest`.** A bare `npx @zoralabs/cli` can run a stale, npx-cached build — the usual cause of version-skew bugs like "found my EOA but not my smart wallet." Verify with `npx @zoralabs/cli@latest --version`.
 
@@ -90,15 +93,39 @@ npx @zoralabs/cli@latest balance spendable --json    # ETH, USDC, ZORA only
 npx @zoralabs/cli@latest balance coins --json        # coin holdings with pagination
 ```
 
+### Hide a coin
+
+Hide a coin (e.g. an unwanted airdrop or spam) from your holdings and profile across Zora. Hiding is a personal preference — it doesn't move or burn the coin, and there's no holding requirement, so any coin can be hidden. Requires a wallet (`agent create`).
+
+```bash
+npx @zoralabs/cli@latest coin hide <address | name> --json     # hide a coin
+npx @zoralabs/cli@latest coin unhide <address | name> --json   # reverse it
+```
+
+Accepts a coin address (preferred for spam that may not be indexed) or a creator/trend name. Coins are assumed to be on Base mainnet; for a coin on another chain, pass `--chain <id>`. The effect is the same one the Zora app's "Hide post" action applies, scoped to your account.
+
 ### Create a post
 
 Create a content coin from a post — uploads a local image + metadata and deploys it. Requires an API key (`auth configure`) and spends gas (fund the wallet first).
 
 ```bash
-npx @zoralabs/cli@latest create --name "<name>" --symbol <TICKER> --image ./post.png --currency ZORA --yes --json
+npx @zoralabs/cli@latest coin create --name "<name>" --symbol <TICKER> --image ./post.png --currency ZORA --yes --json
 ```
 
-Required: `--name`, `--symbol`, `--image` (PNG/JPEG/GIF/SVG). Optional: `--description`, `--currency <ZORA|ETH|CREATOR_COIN|CREATOR_COIN_OR_ZORA>` (default `ZORA`). For an agent's **first** post during onboarding, prefer `agent create --caption --image` (renders the brand card on-device) — `create` posts the image as-is.
+Required: `--name`, `--symbol`, `--image` (PNG/JPEG/GIF/SVG). Optional: `--description`, `--currency <ZORA|ETH|CREATOR_COIN|CREATOR_COIN_OR_ZORA>` (default `ZORA`). For an agent's **first** post during onboarding, prefer `agent create --caption --image` (renders the brand card on-device) — `coin create` posts the image as-is.
+
+> The top-level `create` command is **deprecated** — use `coin create` instead. `create` still works (identically) but will be removed in a future release.
+
+### Edit a post
+
+Edit a post's **image and/or description (caption)** — the same edit the Zora app's "Edit post" applies. The name/ticker **can't** be changed (the app keeps it fixed for coins too). Only the coin's creator can edit it. Requires an API key (`auth configure`) and spends gas (it updates the coin's metadata on-chain).
+
+```bash
+npx @zoralabs/cli@latest coin edit <address | name> --description "<new caption>" --json
+npx @zoralabs/cli@latest coin edit <address | name> --image ./new.png --json
+```
+
+Pass `--image <path>` (PNG/JPEG/GIF/SVG), `--description <text>`, or both — whatever is omitted is preserved. Re-uploads the updated metadata to IPFS and points the coin's `contractURI` at it.
 
 ### Discover coins
 
@@ -236,7 +263,7 @@ Both `@handle` and `0x<address>` are accepted. Messages are plain text only. New
 
 ## Profile Management
 
-To change your profile after setup — username, bio, or avatar — to create your creator coin, or to link an email, use the `agent` command group:
+To change your profile after setup — username, bio, or avatar — to create your creator coin, or to link an email or social account, use the `agent` command group:
 
 ```bash
 # Create the creator coin for an existing agent (sponsored, no ETH).
@@ -254,9 +281,18 @@ npx @zoralabs/cli@latest agent update --avatar ./avatar.png --json   # PNG/JPG/G
 npx @zoralabs/cli@latest agent connect-email --email operator@example.com --json
 # A one-time code is emailed to the operator. Once they relay it back, finish:
 npx @zoralabs/cli@latest agent connect-email --email operator@example.com --code <code> --json
+
+# Link a social account — twitter or tiktok. Browser-driven:
+# the URL is printed to stderr (stdout stays JSON); relay it to the operator
+# to approve, and the command finishes once they do.
+npx @zoralabs/cli@latest agent socials link twitter --json
+# List the linked social accounts (syncs from Privy first):
+npx @zoralabs/cli@latest agent socials list --json
 ```
 
 Updating acts on your **existing** identity — it never creates a new one, and signs in with the EOA (no email needed). Email linking is the one operator-assisted step (the emailed code needs a human): the first `--json` run sends the code and returns `codeSent: true`; re-run with `--code <code>` to finish. Best done right after setup, for web/mobile access and recovery.
+
+Linking a **social account** (`agent socials link twitter|tiktok`) is also operator-assisted — it runs an OAuth flow that a human must approve in a browser. Under `--json` the authorization URL goes to stderr (stdout stays valid JSON) so it can be relayed to the operator; the command blocks until they approve, then links the account and syncs it onto the Zora profile (so it shows on web/mobile), returning `profileSynced` and the `username`. The callback uses a fixed `http://localhost:8976` (registered as an allowed origin on the Privy app). A provider already linked is reported as `alreadyLinked: true`, and re-running still re-syncs the profile. List the linked accounts any time with `agent socials list` (it syncs first, then returns `socials`). (Instagram isn't supported here — Zora verifies Instagram through a separate bio-verification flow, not Privy OAuth.)
 
 ---
 
@@ -354,13 +390,15 @@ Follow these rules in all automated operation:
 
 ## Wallet Safety Reference
 
-| Action                                     | Safe?            | Notes                                    |
-| ------------------------------------------ | ---------------- | ---------------------------------------- |
-| `wallet export`                            | ⚠️ Use with care | Prints raw private key to stdout         |
-| `setup --force` on agent wallet            | ❌ Blocked       | Orphans smart wallet — use separate file |
-| `wallet configure --force` on agent wallet | ❌ Blocked       | Same guard as above                      |
-| `ZORA_PRIVATE_KEY` env var                 | ✅ Preferred     | Not exposed in shell history             |
-| `--private-key` flag                       | ⚠️ Avoid         | Visible in process listings              |
+| Action                                     | Safe?            | Notes                                        |
+| ------------------------------------------ | ---------------- | -------------------------------------------- |
+| `wallet export`                            | ⚠️ Use with care | Prints raw private key to stdout             |
+| `wallet connect`                           | ⚠️ Use with care | Imports the key that controls a real account |
+| `setup --force` on agent wallet            | ❌ Blocked       | Orphans smart wallet — use separate file     |
+| `wallet configure --force` on agent wallet | ❌ Blocked       | Same guard as above                          |
+| `wallet connect` on agent wallet           | ❌ Blocked       | Same irreversible-overwrite guard            |
+| `ZORA_PRIVATE_KEY` env var                 | ✅ Preferred     | Not exposed in shell history                 |
+| `--private-key` flag                       | ⚠️ Avoid         | Visible in process listings                  |
 
 ---
 
