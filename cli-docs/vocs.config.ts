@@ -269,6 +269,7 @@ export default defineConfig({
               text: "agent connect-email",
               link: "/commands/agent#agent-connect-email",
             },
+            { text: "agent socials", link: "/commands/agent#agent-socials" },
             { text: "agent update", link: "/commands/agent#agent-update" },
           ],
         },

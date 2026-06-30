@@ -20,7 +20,7 @@ import {
   usdFromEth,
 } from "../lib/agent/budget.js";
 import { formatUsd } from "../lib/format.js";
-import { safeExit, SUCCESS } from "../lib/exit.js";
+import { safeExit, SUCCESS, CliExitError } from "../lib/exit.js";
 import {
   getJson,
   getYes,
@@ -32,16 +32,33 @@ import { track, setPersonProperties } from "../lib/analytics.js";
 import { formatError } from "../lib/errors.js";
 import {
   ZORA_PRIVY_APP_ID,
+  ZORA_PRIVY_CLI_CLIENT_ID,
   DEFAULT_SIWE_ORIGIN,
   DEFAULT_SIWE_CHAIN_ID,
   createPrivyAccount,
   sendEmailCode,
   linkEmailWithCode,
   hasLinkedEmail,
+  resolveSocialProvider,
+  initOAuthLink,
+  linkOAuthWithCode,
+  hasLinkedOAuthProvider,
+  SOCIAL_PROVIDERS,
 } from "../lib/privy.js";
+import { ensurePrivySession } from "../lib/privy-session.js";
+import {
+  startOAuthCallbackServer,
+  OAUTH_CALLBACK_PORT,
+} from "../lib/oauth-callback-server.js";
+import { openBrowser } from "../lib/open-browser.js";
 import { inputOrFail } from "../lib/prompt.js";
 import { validateTicker } from "../lib/ticker.js";
 import { onboardAgent, createAgentCoin } from "../lib/agent/onboard.js";
+import {
+  syncSocials,
+  SOCIAL_PLATFORM_LABELS,
+  type SocialPlatform,
+} from "../lib/agent/social.js";
 import { updateAgentProfile } from "../lib/agent/update-profile.js";
 import { detectAgentHarness } from "../lib/agent-harness.js";
 import {
@@ -892,6 +909,387 @@ agentCommand
         if (account.isNewUser) {
           console.log(
             "\n  A new Privy account was created for this wallet, with the email linked to it.",
+          );
+        }
+      },
+    });
+  });
+
+const agentSocialsCommand = agentCommand
+  .command("socials")
+  .description(
+    "Manage the agent's linked social accounts (Twitter/X, TikTok). Instagram is linked through Zora's separate verification flow, not here.",
+  )
+  .action(function (this: Command) {
+    this.outputHelp();
+  });
+
+agentSocialsCommand
+  .command("link")
+  .argument(
+    "<provider>",
+    `Social provider to link (${Object.keys(SOCIAL_PROVIDERS).join(", ")})`,
+  )
+  .description(
+    "Link a social account (Twitter/X, TikTok) to your agent's Privy account. " +
+      "Signs in with your EOA, opens the provider's authorization page in your browser, " +
+      "and attaches the account once you approve.",
+  )
+  .option(
+    "--private-key <key>",
+    "EOA private key to sign in with (default: ZORA_PRIVATE_KEY, then your saved wallet; errors if neither is set)",
+  )
+  .option("--app-id <id>", "Privy app id", ZORA_PRIVY_APP_ID)
+  .option(
+    "--client-id <id>",
+    "Privy app client id (must list the local callback as an allowed origin)",
+    ZORA_PRIVY_CLI_CLIENT_ID,
+  )
+  .option(
+    "--chain-id <id>",
+    "EVM chain id for SIWE",
+    String(DEFAULT_SIWE_CHAIN_ID),
+  )
+  .option(
+    "--no-open",
+    "Print the authorization URL instead of opening a browser",
+  )
+  .action(async function (
+    this: Command,
+    providerName: string,
+    options: {
+      privateKey?: string;
+      appId: string;
+      clientId: string;
+      chainId: string;
+      open: boolean;
+    },
+  ) {
+    const json = getJson(this);
+
+    const provider = resolveSocialProvider(providerName);
+    if (!provider) {
+      return outputErrorAndExit(
+        json,
+        `Unsupported provider: ${providerName}`,
+        `Supported providers: ${Object.keys(SOCIAL_PROVIDERS).join(", ")}.`,
+      );
+    }
+
+    const chainId = Number(options.chainId);
+    if (!Number.isInteger(chainId) || chainId <= 0) {
+      return outputErrorAndExit(json, `Invalid --chain-id: ${options.chainId}`);
+    }
+
+    // The whole flow runs on the CLI's dedicated Privy client (cookie-enabled,
+    // with the local callback allowlisted), scoped to the callback origin. SIWE,
+    // oauth/init, and oauth/link all use this same client/origin so the session
+    // cookie is valid at the link step and the redirect validates.
+    const origin = `http://localhost:${OAUTH_CALLBACK_PORT}`;
+
+    // Linking acts on an existing agent — never generate a fresh identity.
+    const resolved = resolveAgentKey(json, options.privateKey, {
+      allowGenerate: false,
+    });
+
+    // 1. Sign in to Privy with the EOA to get an authenticated session
+    //    (access token + cookie) — the link write needs both.
+    let account;
+    try {
+      account = await createPrivyAccount({
+        privateKey: resolved.key,
+        appId: options.appId,
+        clientId: options.clientId,
+        origin,
+        chainId,
+      });
+    } catch (err) {
+      return outputErrorAndExit(
+        json,
+        `Could not sign in to Privy with your wallet: ${formatError(err)}`,
+        "Check your network connection and try again.",
+      );
+    }
+
+    // Sync the Zora profile from Privy, then report. Used by BOTH the freshly-
+    // linked and already-linked paths: an account can be linked in Privy yet
+    // missing from the Zora profile (a prior sync failed, or a cooldown blocked
+    // it), so re-running `agent socials link` must re-attempt the sync rather than exit
+    // early — otherwise that state would never resolve.
+    const finishLink = async (
+      alreadyLinked: boolean,
+      linkedAccounts: unknown,
+    ) => {
+      let synced;
+      let syncError: string | undefined;
+      try {
+        // Wait for this provider's username to land: right after oauth/link the
+        // backend can return socialAccounts before the new account has fully
+        // propagated, with its username still null. awaitPlatform retries through
+        // that window so we don't report success prematurely.
+        synced = await syncSocials(account.accessToken, {
+          awaitPlatform: provider.privyProvider as SocialPlatform,
+          attempts: 5,
+        });
+      } catch (err) {
+        syncError = formatError(err);
+      }
+      // The backend can force-unlink the provider (e.g. it was linked recently
+      // and is within Zora's re-link cooldown), so it won't show on the profile.
+      const cooledDown =
+        synced?.forceUnlinkedSocials.includes(provider.platform) ?? false;
+      const username =
+        synced?.usernames[
+          provider.privyProvider as keyof typeof synced.usernames
+        ];
+      // Treat it as synced only once the username is actually on the profile —
+      // a present-but-empty socialAccounts response isn't confirmation.
+      const profileSynced = Boolean(username);
+
+      track("cli_agent_link", {
+        provider: provider.privyProvider,
+        already_linked: alreadyLinked,
+        profile_synced: profileSynced,
+        generated_wallet: resolved.generated,
+        output_format: json ? "json" : "text",
+      });
+
+      outputData(json, {
+        json: {
+          provider: provider.privyProvider,
+          did: account.did,
+          address: account.address,
+          alreadyLinked,
+          linkedAccounts: linkedAccounts ?? null,
+          profileSynced,
+          username: username ?? null,
+          cooldown: cooledDown,
+          walletSource: resolved.source,
+        },
+        render: () => {
+          console.log(
+            alreadyLinked
+              ? `\n✓ ${provider.label} is already linked`
+              : `\n✓ ${provider.label} linked`,
+          );
+          if (username) console.log(`  Username:     @${username}`);
+          console.log(`  Wallet (EOA): ${account.address}`);
+          console.log(`  Privy DID:    ${account.did}`);
+          if (cooledDown) {
+            console.log(
+              `\n⚠ Zora couldn't add ${provider.label} to your profile — it was linked ` +
+                "recently and is in a cooldown. Try again in 7 days by re-running " +
+                `\`zora agent socials link ${provider.privyProvider}\`.`,
+            );
+          } else if (syncError) {
+            console.log(
+              `\n⚠ Couldn't sync ${provider.label} to your Zora profile: ${syncError}` +
+                `\n  Re-run \`zora agent socials link ${provider.privyProvider}\` to retry the sync.`,
+            );
+          } else if (username) {
+            console.log("\n  It now appears on your Zora profile.");
+          } else {
+            console.log(
+              `\n• Linked. It can take a moment to appear on your Zora profile — ` +
+                `check with \`zora agent socials list\`.`,
+            );
+          }
+        },
+      });
+    };
+
+    // 2. Already linked in Privy? Skip the browser OAuth flow, but still sync —
+    //    being linked in Privy doesn't guarantee it's on the Zora profile.
+    if (hasLinkedOAuthProvider(account.linkedAccounts, provider)) {
+      return finishLink(true, account.linkedAccounts);
+    }
+
+    // 3. Start the local callback server, then ask Privy for the provider's
+    //    authorization URL (scoped to that exact redirect).
+    let server;
+    try {
+      server = await startOAuthCallbackServer();
+    } catch (err) {
+      return outputErrorAndExit(
+        json,
+        `Could not start the local callback server on port ${OAUTH_CALLBACK_PORT}: ${formatError(err)}`,
+        `Something else may be using http://localhost:${OAUTH_CALLBACK_PORT}. Free that port and try again.`,
+      );
+    }
+
+    try {
+      const init = await initOAuthLink({
+        provider: provider.privyProvider,
+        redirectTo: server.redirectUri,
+        accessToken: account.accessToken,
+        cookie: account.cookie,
+        appId: options.appId,
+        clientId: options.clientId,
+        origin,
+      });
+
+      // 4. Send the user to the provider. The authorization step is inherently
+      //    interactive — a human must approve in a browser — so the URL must
+      //    always be surfaced. In --json mode we don't open a browser and print
+      //    the URL to stderr, keeping stdout pure JSON for the final result.
+      if (json) {
+        console.error(
+          `Open this URL to authorize ${provider.label}, then approve in the browser:\n${init.authorizationUrl}`,
+        );
+      } else {
+        const opened = options.open && openBrowser(init.authorizationUrl);
+        if (opened) {
+          console.log(
+            `\n• Opening ${provider.label} authorization in your browser…`,
+          );
+          console.log(
+            `  If it didn't open, visit:\n  ${init.authorizationUrl}`,
+          );
+        } else {
+          console.log(
+            `\n• Open this URL to authorize ${provider.label}:\n  ${init.authorizationUrl}`,
+          );
+        }
+        console.log("\n  Waiting for you to approve…");
+      }
+
+      // 5. Wait for the redirect and validate the state (CSRF/phishing guard).
+      const callback = await server.waitForCallback();
+      if (callback.state !== init.stateCode) {
+        return outputErrorAndExit(
+          json,
+          "The OAuth state didn't match — the flow may have been tampered with.",
+          "Run the command again and complete it in one go.",
+        );
+      }
+
+      // 6. Exchange the code to attach the provider to the user.
+      const result = await linkOAuthWithCode({
+        accessToken: account.accessToken,
+        authorizationCode: callback.code,
+        stateCode: init.stateCode,
+        codeVerifier: init.codeVerifier,
+        appId: options.appId,
+        clientId: options.clientId,
+        origin,
+        cookie: account.cookie,
+      });
+
+      // 7. Sync the Zora profile from Privy so the link shows on profile pages
+      //    (web + mobile). The Privy link already succeeded, so a sync failure or
+      //    cooldown is reported as a warning by finishLink, not a hard error.
+      return finishLink(false, result.linkedAccounts);
+    } catch (err) {
+      // A clean exit (e.g. the state-mismatch guard above) already reported
+      // itself — let it propagate to the top-level handler rather than
+      // re-wrapping it as a link failure.
+      if (err instanceof CliExitError) throw err;
+      return outputErrorAndExit(
+        json,
+        `Could not link ${provider.label}: ${formatError(err)}`,
+        "Re-run the command to try again.",
+      );
+    } finally {
+      server.close();
+    }
+  });
+
+agentSocialsCommand
+  .command("list")
+  .description(
+    "List the agent's linked social accounts. Signs in with the EOA and syncs the Zora profile from Privy first, so the list reflects what shows publicly on web and mobile.",
+  )
+  .option(
+    "--private-key <key>",
+    "EOA private key to sign in with (default: ZORA_PRIVATE_KEY, then your saved wallet; errors if neither is set)",
+  )
+  .option("--app-id <id>", "Privy app id", ZORA_PRIVY_APP_ID)
+  .option(
+    "--chain-id <id>",
+    "EVM chain id for SIWE",
+    String(DEFAULT_SIWE_CHAIN_ID),
+  )
+  .action(async function (
+    this: Command,
+    options: { privateKey?: string; appId: string; chainId: string },
+  ) {
+    const json = getJson(this);
+
+    const chainId = Number(options.chainId);
+    if (!Number.isInteger(chainId) || chainId <= 0) {
+      return outputErrorAndExit(json, `Invalid --chain-id: ${options.chainId}`);
+    }
+
+    // Listing acts on an existing agent — never generate a fresh identity.
+    const resolved = resolveAgentKey(json, options.privateKey, {
+      allowGenerate: false,
+    });
+
+    // Get a Privy session. Unlike `link`, listing has no OAuth callback and
+    // needs no session cookie — just a token to identify the user (DID) for the
+    // sync/read — so it uses the cached/refreshed session (ensurePrivySession)
+    // rather than burning a SIWE call on every run.
+    let account;
+    try {
+      account = await ensurePrivySession({
+        privateKey: resolved.key,
+        appId: options.appId,
+        origin: DEFAULT_SIWE_ORIGIN,
+        chainId,
+      });
+    } catch (err) {
+      return outputErrorAndExit(
+        json,
+        `Could not sign in to Privy with your wallet: ${formatError(err)}`,
+        "Check your network connection and try again.",
+      );
+    }
+
+    // Always sync from Privy first so the list reflects the current profile.
+    let synced;
+    try {
+      synced = await syncSocials(account.accessToken);
+    } catch (err) {
+      return outputErrorAndExit(
+        json,
+        `Could not read your linked socials: ${formatError(err)}`,
+        "Try again in a moment.",
+      );
+    }
+
+    const socials = (Object.keys(synced.usernames) as SocialPlatform[]).map(
+      (platform) => ({ platform, username: synced.usernames[platform]! }),
+    );
+
+    track("cli_agent_socials_list", {
+      count: socials.length,
+      generated_wallet: resolved.generated,
+      output_format: json ? "json" : "text",
+    });
+
+    outputData(json, {
+      json: {
+        did: account.did,
+        address: account.address,
+        socials,
+        cooldown: synced.forceUnlinkedSocials,
+        walletSource: resolved.source,
+      },
+      render: () => {
+        if (socials.length === 0) {
+          console.log("\nNo social accounts linked.");
+          console.log("  Link one with `zora agent socials link <provider>`.");
+        } else {
+          console.log("\nLinked social accounts:");
+          for (const { platform, username } of socials) {
+            console.log(
+              `  ${SOCIAL_PLATFORM_LABELS[platform] ?? platform}: @${username}`,
+            );
+          }
+        }
+        if (synced.forceUnlinkedSocials.length > 0) {
+          console.log(
+            `\n⚠ In cooldown (linked recently — retry in 7 days): ${synced.forceUnlinkedSocials.join(", ")}`,
           );
         }
       },

@@ -13,6 +13,7 @@ zora agent [command]
 | `agent create`        | Create an agent identity (profile + smart wallet)               |
 | `agent coin`          | Create the agent's creator coin for an existing agent           |
 | `agent connect-email` | Link an email to the agent's account via a one-time code        |
+| `agent socials`       | Link and list social accounts (Twitter/X, TikTok)               |
 | `agent update`        | Update the agent's profile (username, bio, avatar)              |
 | `agent budget`        | Set and track a global, wallet-level spending budget for skills |
 
@@ -280,6 +281,134 @@ npx @zoralabs/cli agent connect-email --email you@example.com --code 123456 --ye
   "address": "0xb4a06BdD9e0E60FFE22E4E7590842bfD2069034E",
   "alreadyLinked": false,
   "linkedAccounts": [],
+  "walletSource": "~/.config/zora/wallet.json"
+}
+```
+
+---
+
+## agent socials
+
+Link and list the agent's social accounts — `twitter` or `tiktok`.
+
+```bash
+zora agent socials [command]
+```
+
+| Subcommand           | Description                                         |
+| -------------------- | --------------------------------------------------- |
+| `agent socials link` | Link a social account via the provider's OAuth flow |
+| `agent socials list` | List the linked social accounts (syncs first)       |
+
+:::info
+**Instagram is not supported here.** Zora links Instagram through a separate bio-verification flow (not Privy OAuth), so it isn't available via `agent socials`.
+:::
+
+### agent socials link
+
+Link a social account — `twitter` or `tiktok` — to the agent's Privy account, so it shows up on the Zora profile. Signs in with the EOA, opens the provider's authorization page in your browser, attaches the account once you approve, and syncs it onto your Zora profile.
+
+```bash
+zora agent socials link <provider> [options]
+```
+
+#### Options
+
+| Flag                  | Description                                              | Default                                   |
+| --------------------- | -------------------------------------------------------- | ----------------------------------------- |
+| `<provider>`          | `twitter` or `tiktok` (required)                         | —                                         |
+| `--private-key <key>` | EOA private key to sign in with                          | `ZORA_PRIVATE_KEY`, then the saved wallet |
+| `--no-open`           | Print the authorization URL instead of opening a browser | —                                         |
+| `--json`              | Machine-readable JSON output                             | —                                         |
+
+Advanced Privy overrides — `--app-id`, `--client-id`, `--chain-id` — are also available but rarely needed; they default to the Zora app and its dedicated CLI client.
+
+:::info
+**The flow is interactive.** Linking runs an OAuth flow in the browser, so a human must approve the provider's authorization screen. The CLI starts a short-lived local callback server on a fixed loopback port (`http://localhost:8976`), opens the URL, and waits for the approval to redirect back. The entire flow (sign-in, authorization, and link) runs on a **dedicated Privy app client** that lists `http://localhost:8976` as an allowed origin — which is why the port is fixed rather than configurable. Under `--json`, the authorization URL is printed to stderr (stdout stays pure JSON) so it can be relayed to whoever completes the approval; `--no-open` prints the URL instead of launching a browser, useful when the CLI runs where it can't open one.
+:::
+
+#### Link a social account
+
+```bash
+npx @zoralabs/cli agent socials link twitter
+```
+
+```
+ • Opening Twitter/X authorization in your browser…
+   If it didn't open, visit:
+   https://x.com/i/oauth2/authorize?...
+
+   Waiting for you to approve…
+
+ ✓ Twitter/X linked
+   Username:     @your_handle
+   Wallet (EOA): 0xb4a06BdD9e0E60FFE22E4E7590842bfD2069034E
+   Privy DID:    did:privy:abc123
+
+   It now appears on your Zora profile.
+```
+
+After the OAuth link, the CLI syncs the account onto your Zora profile (the same step the web app runs) so it shows up on web and mobile. If a social account of that type is already linked in Privy, the command skips the browser flow but **still re-runs the profile sync** — so re-running `agent socials link <provider>` heals an account that's linked in Privy yet missing from the profile (e.g. a previous sync failed, or a cooldown blocked it).
+
+:::info
+**Provider re-link cooldown.** If the account was linked recently, the provider (e.g. X) blocks re-linking for several days. The browser shows the provider's error and the CLI times out; if the link succeeds in Privy but the profile sync reports the platform as force-unlinked, the response sets `cooldown: true` and `profileSynced: false`.
+:::
+
+#### JSON output
+
+`profileSynced` indicates the account was synced onto the Zora profile; `username` is the synced handle. A linked-but-not-synced result (sync failure or `cooldown: true`) still means the account is attached in Privy.
+
+```json
+{
+  "provider": "twitter",
+  "did": "did:privy:abc123",
+  "address": "0xb4a06BdD9e0E60FFE22E4E7590842bfD2069034E",
+  "alreadyLinked": false,
+  "linkedAccounts": [{ "type": "twitter_oauth" }],
+  "profileSynced": true,
+  "username": "your_handle",
+  "cooldown": false,
+  "walletSource": "~/.config/zora/wallet.json"
+}
+```
+
+### agent socials list
+
+List the agent's linked social accounts. Signs in with the EOA and **syncs the Zora profile from Privy first**, so the list reflects what shows publicly on web and mobile. Reads from the Zora profile, so it includes accounts linked through other flows (e.g. a bio-verified Instagram), not just ones linked via this CLI.
+
+```bash
+zora agent socials list [options]
+```
+
+#### Options
+
+| Flag                  | Description                     | Default                                   |
+| --------------------- | ------------------------------- | ----------------------------------------- |
+| `--private-key <key>` | EOA private key to sign in with | `ZORA_PRIVATE_KEY`, then the saved wallet |
+| `--json`              | Machine-readable JSON output    | —                                         |
+
+#### List linked accounts
+
+```bash
+npx @zoralabs/cli agent socials list
+```
+
+```
+Linked social accounts:
+  Twitter/X: @your_handle
+  Farcaster: @your_handle
+```
+
+#### JSON output
+
+`socials` lists each linked platform and its handle; `cooldown` holds any platforms the backend force-unlinked (linked recently — retry in 7 days).
+
+```json
+{
+  "did": "did:privy:abc123",
+  "address": "0xb4a06BdD9e0E60FFE22E4E7590842bfD2069034E",
+  "socials": [{ "platform": "twitter", "username": "your_handle" }],
+  "cooldown": [],
   "walletSource": "~/.config/zora/wallet.json"
 }
 ```
