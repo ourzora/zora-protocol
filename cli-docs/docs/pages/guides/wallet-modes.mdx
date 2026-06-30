@@ -2,16 +2,20 @@
 
 The Zora CLI operates in one of two modes, depending on whether a smart wallet is configured. The commands and flags are identical in both — only the wallet that holds and spends your funds, and the way transactions are sent, differ.
 
-| Mode             | Wallet that holds funds        | Created by                        |
-| ---------------- | ------------------------------ | --------------------------------- |
-| **EOA**          | Your private-key account (EOA) | [`setup`](/commands/setup)        |
-| **Smart wallet** | A Coinbase Smart Wallet        | [`agent create`](/commands/agent) |
+| Mode             | Wallet that holds funds        | Created by                                                                                                                             |
+| ---------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| **EOA**          | Your private-key account (EOA) | [`setup`](/commands/setup)                                                                                                             |
+| **Smart wallet** | A Coinbase Smart Wallet        | [`agent create`](/commands/agent) (new account) or [`wallet connect`](/commands/wallet#connect-an-existing-account) (existing account) |
 
 ## How the mode is selected
 
 The CLI always resolves your private-key account first — that's the signer. It then looks for a smart wallet address, from the `ZORA_SMART_WALLET_ADDRESS` environment variable or the `smartWalletAddress` field in `~/.config/zora/wallet.json`. If one is found, commands operate **through the smart wallet**. If not, they run in **EOA mode**.
 
-It is not a human-versus-agent distinction — it is simply whether a smart wallet is configured. Running [`agent create`](/commands/agent) is the path that provisions one, but once it exists, the normal commands drive it like any other wallet.
+It is not a human-versus-agent distinction — it is simply whether a smart wallet is configured. Two paths provision one: [`agent create`](/commands/agent) stands up a brand-new Zora account, while [`wallet connect`](/commands/wallet#connect-an-existing-account) connects an account you **already** have (from the web or mobile app) by importing its key and auto-discovering its smart wallet on-chain. Either way, once the smart wallet is configured the normal commands drive it like any other wallet.
+
+:::warning
+[`setup`](/commands/setup) and `wallet configure` (interactive import) store only the bare **EOA**, so they run in EOA mode — they won't act as an existing Zora account even if the imported key controls one. To drive an existing account, use [`wallet connect`](/commands/wallet#connect-an-existing-account) instead, which discovers and configures its smart wallet.
+:::
 
 ## What changes between modes
 
@@ -25,4 +29,4 @@ The day-to-day commands are the same — `buy --eth`, `sell --percent`, `send --
 
 A Zora profile, creator coin, posts, and DMs all live on the smart wallet — that's the account shown on zora.co. The EOA is only the owner key that signs for it.
 
-EOA mode is fine for trading on its own, but it isn't a social identity. To have a profile, post, or send and receive DMs, operate as the smart wallet — which is what [`agent create`](/commands/agent) sets up.
+EOA mode is fine for trading on its own, but it isn't a social identity. To have a profile, post, or send and receive DMs, operate as the smart wallet — either stand up a new one with [`agent create`](/commands/agent), or connect an account you already have with [`wallet connect`](/commands/wallet#connect-an-existing-account).

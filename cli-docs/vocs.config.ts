@@ -239,7 +239,16 @@ export default defineConfig({
         { text: "claim", link: "/commands/claim" },
         { text: "pay", link: "/commands/pay" },
         { text: "comment", link: "/commands/comment" },
-        { text: "create", link: "/commands/create" },
+        {
+          text: "coin",
+          link: "/commands/coin",
+          items: [
+            { text: "coin create", link: "/commands/coin#coin-create" },
+            { text: "coin edit", link: "/commands/coin#coin-edit" },
+            { text: "coin hide", link: "/commands/coin#coin-hide" },
+            { text: "coin unhide", link: "/commands/coin#coin-unhide" },
+          ],
+        },
         { text: "balance", link: "/commands/balance" },
         {
           text: "profile",
@@ -258,7 +267,16 @@ export default defineConfig({
         },
         { text: "auth", link: "/commands/auth" },
         { text: "setup", link: "/commands/setup" },
-        { text: "wallet", link: "/commands/wallet" },
+        {
+          text: "wallet",
+          link: "/commands/wallet",
+          items: [
+            {
+              text: "wallet connect",
+              link: "/commands/wallet#connect-an-existing-account",
+            },
+          ],
+        },
         {
           text: "agent",
           link: "/commands/agent",

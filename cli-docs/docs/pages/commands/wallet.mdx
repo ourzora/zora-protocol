@@ -8,11 +8,12 @@ zora wallet [command]
 
 ## Subcommands
 
-| Subcommand         | Description                              |
-| ------------------ | ---------------------------------------- |
-| `wallet info`      | Show wallet address and storage location |
-| `wallet export`    | Print the raw private key to stdout      |
-| `wallet configure` | Create or import a wallet                |
+| Subcommand         | Description                                                        |
+| ------------------ | ------------------------------------------------------------------ |
+| `wallet info`      | Show wallet address and storage location                           |
+| `wallet export`    | Print the raw private key to stdout                                |
+| `wallet configure` | Create or import a wallet                                          |
+| `wallet connect`   | Connect an existing Zora account (auto-discovers its smart wallet) |
 
 ## Examples
 
@@ -99,4 +100,49 @@ Prompts to create a new wallet or import an existing private key. If `ZORA_PRIVA
 
 :::warning
 `--force` will overwrite the wallet at `~/.config/zora/wallet.json`. If that wallet owns a Zora agent, its smart wallet becomes unreachable — use a separate wallet file instead.
+:::
+
+### Connect an existing account
+
+```bash
+npx @zoralabs/cli wallet connect
+```
+
+Connect a Zora account you already have (created on the web or mobile app) so the CLI can act as it. Paste the private key that controls the account — export it from Zora's wallet settings (Privy). The CLI derives the owner EOA, **auto-discovers the account's smart wallet on-chain** (no address to look up), verifies the key owns it, and saves both to `~/.config/zora/wallet.json`. After connecting, `buy` / `sell` / `coin create` and the social commands act as your real account.
+
+This is the fix for "found my EOA but not my smart wallet": [`setup`](/commands/setup) and `wallet configure` (interactive import) only store the bare EOA, so they trade from the key directly rather than your Zora account. See [wallet modes](/guides/wallet-modes) for how the connected account maps to smart wallet mode.
+
+#### Options
+
+| Flag                       | Description                                                          |
+| -------------------------- | -------------------------------------------------------------------- |
+| `--key <key>`              | Private key (hex) — alternative to the positional argument or prompt |
+| `--smart-wallet <address>` | Smart wallet (account) address — overrides on-chain auto-discovery   |
+| `--force`                  | Overwrite an already-configured wallet without prompting             |
+| `--yes`                    | Skip interactive prompts (requires the key as an argument)           |
+| `--json`                   | Machine-readable JSON output                                         |
+
+:::tip
+Pass `--smart-wallet <address>` to override discovery when the account has a non-standard owner set (otherwise the smart wallet is derived deterministically from the owner key).
+:::
+
+#### JSON output
+
+```bash
+npx @zoralabs/cli wallet connect --key 0x... --yes --json
+```
+
+`discovered` is `true` when the smart wallet was found by on-chain prediction, and `false` when you supplied it via `--smart-wallet`:
+
+```json
+{
+  "smartWalletAddress": "0x1111111111111111111111111111111111111111",
+  "ownerAddress": "0xb4a06BdD9e0E60FFE22E4E7590842bfD2069034E",
+  "path": "~/.config/zora/wallet.json",
+  "discovered": true
+}
+```
+
+:::warning
+This stores the private key at `~/.config/zora/wallet.json`. Keep that file safe and backed up — anyone with the key has full access to the account. Fund the smart wallet with ETH or USDC on Base to start trading.
 :::
