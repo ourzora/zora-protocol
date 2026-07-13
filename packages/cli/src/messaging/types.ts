@@ -36,6 +36,16 @@ export interface DmMessage {
   sentAtMs: number;
 }
 
+/** An XMTP installation (device) registered to the inbox. */
+export interface InstallationInfo {
+  /** Installation id (hex). */
+  id: string;
+  /** When the installation was registered (epoch ms), when the network reports it. */
+  createdAtMs?: number;
+  /** True for the installation this client is currently running as. */
+  current: boolean;
+}
+
 /** A DM conversation summary for `zora dm list` / `zora dm requests`. */
 export interface DmSummary {
   /** XMTP conversation id. */
@@ -81,8 +91,27 @@ export interface MessagingClient {
    *
    * Prefer this over polling `sync()` + `listDms()` to avoid XMTP read rate
    * limits (20 000 reads / 5 min). The stream makes ≈ zero requests at rest.
+   *
+   * Each yielded message carries the `consent` state of its conversation so
+   * callers can tell an allowed DM from an `unknown`-consent message request
+   * (a first message from a stranger, pending approval) without a second lookup.
    */
-  streamAllMessages(): AsyncIterable<DmMessage & { peerAddress: Address | null }>;
+  streamAllMessages(): AsyncIterable<
+    DmMessage & { peerAddress: Address | null; consent: DmConsent }
+  >;
+  /**
+   * List the XMTP installations (devices) registered to this inbox, from the
+   * network — so an agent can see and manage its own devices against the
+   * 10-installation-per-inbox cap without leaving the CLI.
+   */
+  listInstallations(): Promise<InstallationInfo[]>;
+  /**
+   * Revoke installations by id, freeing slots against the cap. Unknown ids are
+   * ignored. The caller is responsible for not revoking the current device.
+   */
+  revokeInstallations(ids: string[]): Promise<void>;
+  /** Revoke every installation except the one this client is running as. */
+  revokeOtherInstallations(): Promise<void>;
   /** Close the underlying SDK database connection and any active streams. */
   close(): Promise<void>;
 }

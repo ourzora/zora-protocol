@@ -1,6 +1,5 @@
 import {
   Address,
-  Client,
   decodeAbiParameters,
   getAddress,
   Hex,
@@ -10,9 +9,9 @@ import {
   toCoinbaseSmartAccount,
   ToCoinbaseSmartAccountReturnType,
 } from "viem/account-abstraction";
-import { readContract } from "viem/actions";
 import { base } from "viem/chains";
 import { createPublicClient } from "../client/public.js";
+import type { ChainClient } from "../agent/zora-client.js";
 import { createPrivateKeyAccount } from "./wallet.js";
 
 export const SMART_WALLET_ABI = [
@@ -32,35 +31,47 @@ export const SMART_WALLET_ABI = [
   },
 ] as const;
 
-type SmartWalletOwner = {
+export type SmartWalletOwner = {
   index: number;
   address: Address | null;
   raw: Hex;
 };
 
+/** A real wallet has a handful of owners; a larger count means a bad read. */
+const MAX_SMART_WALLET_OWNERS = 256n;
+
 /**
- * Returns the owners of a smart wallet
+ * Returns the owners of a smart wallet, reading the owner set from its actual
+ * on-chain layout. Typed against the structural {@link ChainClient} so both the
+ * viem public client (buy/sell/post) and the XMTP auth provider can share it.
  */
-const getSmartWalletOwners = async (
-  client: Client,
+export const getSmartWalletOwners = async (
+  client: ChainClient,
   smartWalletAddress: Address,
 ): Promise<SmartWalletOwner[]> => {
   // returns the next index that will be used to add a new owner (so, this is the total number of owners)
-  const nextIndex = await readContract(client, {
+  const nextIndex = (await client.readContract({
     address: smartWalletAddress,
     abi: SMART_WALLET_ABI,
     functionName: "nextOwnerIndex",
-  });
+  })) as bigint;
+
+  // Guard against a garbage read driving an unbounded loop.
+  if (nextIndex > MAX_SMART_WALLET_OWNERS) {
+    throw new Error(
+      `Smart wallet ${smartWalletAddress} reports an implausible owner count (${nextIndex})`,
+    );
+  }
 
   const owners: SmartWalletOwner[] = [];
 
   for (let i = 0n; i < nextIndex; i++) {
-    const raw = await readContract(client, {
+    const raw = (await client.readContract({
       address: smartWalletAddress,
       abi: SMART_WALLET_ABI,
       functionName: "ownerAtIndex",
       args: [i],
-    });
+    })) as Hex;
 
     let address: Address | null = null;
 

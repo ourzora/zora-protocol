@@ -12,7 +12,7 @@ import { safeExit, ERROR } from "./exit.js";
 import { homedir, platform } from "node:os";
 import { Address, isAddress } from "viem";
 
-function getConfigDir(): string {
+export function getConfigDir(): string {
   if (platform() === "win32") {
     return join(
       process.env.APPDATA ?? join(homedir(), "AppData", "Roaming"),

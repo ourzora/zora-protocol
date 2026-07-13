@@ -18,6 +18,7 @@ import type {
   DmConsent,
   DmMessage,
   DmSummary,
+  InstallationInfo,
   MessagingClient,
 } from "./types.js";
 
@@ -53,7 +54,12 @@ const asAddress = (value: string | undefined): Address | null => {
   }
 };
 
-/** Path of the local XMTP SQLite store, under the CLI's config dir. */
+/**
+ * Path of the local XMTP SQLite store, under the CLI's config dir. There is one
+ * store per inbox: the `dm listen` process owns it while running, and one-shot
+ * `dm` commands route through that process over IPC rather than opening their
+ * own client, so a single process ever touches the database at a time.
+ */
 const defaultDbPath = (env: XmtpEnv, inboxId: string): string => {
   const base =
     platform() === "win32"
@@ -260,7 +266,7 @@ export const createMessagingClient = async (
     },
 
     streamAllMessages(): AsyncIterable<
-      DmMessage & { peerAddress: Address | null }
+      DmMessage & { peerAddress: Address | null; consent: DmConsent }
     > {
       // Initial sync so we don't miss anything that arrived while offline.
       // The stream itself is a gRPC server-push — no polling, ≈ zero reads at
@@ -297,11 +303,43 @@ export const createMessagingClient = async (
           const addrByInbox = await addressMapForDm(convo);
           const dmMessage = toMessage(message, addrByInbox);
           const peerAddr = addrByInbox.get(convo.peerInboxId) ?? null;
-          yield { ...dmMessage, peerAddress: peerAddr };
+          const consent = consentFromSdk(convo.consentState());
+          yield { ...dmMessage, peerAddress: peerAddr, consent };
         }
       }
 
       return generate();
+    },
+
+    async listInstallations(): Promise<InstallationInfo[]> {
+      // From the network, so it reflects every registered device — including
+      // ones with no local store here — which is what matters for the cap.
+      const state = await client.preferences.fetchInboxState();
+      return state.installations.map((inst) => ({
+        id: inst.id,
+        createdAtMs:
+          inst.clientTimestampNs != null
+            ? Number(inst.clientTimestampNs / 1_000_000n)
+            : undefined,
+        current: inst.id === client.installationId,
+      }));
+    },
+
+    async revokeInstallations(ids: string[]): Promise<void> {
+      if (ids.length === 0) return;
+      const state = await client.preferences.fetchInboxState();
+      const wanted = new Set(ids);
+      // The SDK revokes by installation bytes, not id, so resolve ids → bytes
+      // from the current inbox state; silently skip ids that aren't registered.
+      const bytes = state.installations
+        .filter((inst) => wanted.has(inst.id))
+        .map((inst) => inst.bytes);
+      if (bytes.length === 0) return;
+      await client.revokeInstallations(bytes);
+    },
+
+    async revokeOtherInstallations(): Promise<void> {
+      await client.revokeAllOtherInstallations();
     },
 
     async close(): Promise<void> {
