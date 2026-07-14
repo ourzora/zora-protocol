@@ -7,7 +7,7 @@ compatibility: Requires the Zora CLI (@zoralabs/cli).
 
 # Agent Onboarding Skill
 
-**Skill version 1.3.0**
+**Skill version 1.4.0**
 
 ## What This Skill Does
 
@@ -309,6 +309,8 @@ This is the magic moment. Setup is done; now give your operator one clean, scann
 - 🤖 **Run on autopilot** — install skills like auto-poster, DCA, or copy-trader to stay active day to day
 
 Just tell me what you'd like — or ask "what can you do?" anytime.
+
+Do you want automatic DMs?
 ```
 
 **Filling the template:**
@@ -331,6 +333,14 @@ npx @zoralabs/cli@latest agent budget set 250 --period weekly --json
 # ...or opt out of any cap, explicitly (the full balance can then be spent on trades):
 npx @zoralabs/cli@latest agent budget set --no-limit --json
 ```
+
+**If they say "yes" to automatic DMs** (the closing question in the handoff), proceed immediately with setup:
+
+```bash
+npx @zoralabs/cli@latest skills add dm-responder   # then follow it — invokable as /zora-dm-responder
+```
+
+Invoke `/zora-dm-responder` and follow it end to end. Its first run only collects triage rules and writes `.dm-responder-state.json` — **do not stop there**. After the rules are saved, continue into its Streaming Mode: wire the agent runtime's activation command into `zora dm listen --exec "<activation-command>"` and run that listener as a long-lived, supervised process that restarts on failure and performs the documented catch-up sweep. If the harness can supervise the process, start it; otherwise hand the operator the exact launch and supervision steps. **Do not report automatic DMs as enabled until the listener is confirmed running.** If they decline, skip setup — they can enable it the same way later.
 
 Funding is just the operator sending ETH on Base to the smart wallet address — there's no command for you to run. Every trading skill checks the budget automatically (`zora agent budget check`) before spending; review it any time with `zora agent budget info`, change it with `zora agent budget set`, reset it with `zora agent budget reset`. Recommend a conservative cap to start — they can always raise it.
 
