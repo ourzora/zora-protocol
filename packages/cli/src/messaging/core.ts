@@ -142,12 +142,25 @@ export const sendReply = async (
         }
       }
     : undefined;
+  // Sync first so a reply to a conversation that arrived on another installation
+  // (e.g. an `unknown`-consent request the background listener saw) resolves to
+  // the EXISTING conversation instead of being treated as brand-new — which
+  // would wrongly trip the new-conversation gate and start a duplicate DM.
+  await client.sync(["allowed", "unknown"]);
   return client.sendText(peerAddress, text, gate);
 };
 
-/** Approve/deny a conversation by setting its consent state. */
-export const setConsentForPeer = (
+/**
+ * Approve/deny a conversation by setting its consent state. Syncs first so a
+ * request that first arrived on another installation (e.g. the background
+ * listener) is present locally before we look it up — otherwise the peer's
+ * conversation isn't found and the approve/deny throws.
+ */
+export const setConsentForPeer = async (
   client: MessagingClient,
   peerAddress: Address,
   consent: DmConsent,
-): Promise<void> => client.setConsent(peerAddress, consent);
+): Promise<void> => {
+  await client.sync(["allowed", "unknown"]);
+  return client.setConsent(peerAddress, consent);
+};

@@ -1,4 +1,10 @@
-import { createPublicClient, http, type Address, type Hex } from "viem";
+import {
+  createPublicClient,
+  http,
+  isAddressEqual,
+  type Address,
+  type Hex,
+} from "viem";
 import { base } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 import { findEmbeddedWallet } from "../lib/privy.js";
@@ -9,6 +15,10 @@ import {
   saveSmartWalletAddress,
 } from "../lib/config.js";
 import { predictAddress, isDeployed } from "../lib/agent/smart-wallet.js";
+import {
+  getSmartWalletOwners,
+  type SmartWalletOwner as OnChainOwner,
+} from "../lib/account/smart-wallet.js";
 import type { ChainClient } from "../lib/agent/zora-client.js";
 import type { PrivyAuthProvider } from "./identity.js";
 import type { SmartWalletOwner } from "./signer.js";
@@ -57,7 +67,7 @@ function resolveEmbeddedWallet(session: PrivySession): Address | undefined {
 async function resolveSmartWalletAddress(
   external: Address,
   embedded: Address | undefined,
-  opts: CliSmartWalletProviderOptions,
+  client: ChainClient,
 ): Promise<Address> {
   const configured = getSmartWalletAddress();
   if (configured) return configured;
@@ -67,12 +77,6 @@ async function resolveSmartWalletAddress(
   // identity — there's nothing to derive from, so onboarding hasn't happened here.
   if (!embedded) throw new Error(NEEDS_AGENT_CREATE);
 
-  const client =
-    opts.client ??
-    createPublicClient({
-      chain: base,
-      transport: http(opts.rpcUrl ?? DEFAULT_BASE_RPC),
-    });
   const predicted = await predictAddress(client, [embedded, external]);
   if (!(await isDeployed(client, predicted))) {
     throw new Error(
@@ -83,6 +87,54 @@ async function resolveSmartWalletAddress(
   // derivation next time.
   saveSmartWalletAddress(predicted);
   return predicted;
+}
+
+/**
+ * Resolve the smart wallet's owner set — and thus the index we must wrap the
+ * ERC-1271 signature with — from its ACTUAL on-chain layout, not a hardcoded
+ * deploy-order guess. XMTP verifies the wrapped signature against the on-chain
+ * owner at that index; wrapping the wrong index yields an invalid signature and
+ * fails every fresh identity op (registering a new installation, revoking one) —
+ * even though read/reuse paths, which don't re-sign, appear to work. A single
+ * external owner at index 0 (rather than the assumed `[embedded@0, external@1]`)
+ * is exactly what breaks under the old assumption.
+ *
+ * Delegates the on-chain read to the shared {@link getSmartWalletOwners} (the
+ * same resolver buy/sell/post use), then maps to the `{ownerAddress, ownerIndex}`
+ * shape XMTP signing needs — keeping only address (EOA) owners, since a passkey
+ * owner holds an index but can't sign here.
+ *
+ * Best-effort: falls back to the deploy-order assumption if the read fails or
+ * the signing EOA isn't found on-chain, so behavior never regresses below today.
+ */
+async function resolveOwners(args: {
+  client: ChainClient;
+  smartWallet: Address;
+  external: Address;
+  embedded: Address | undefined;
+}): Promise<SmartWalletOwner[]> {
+  const fallback: SmartWalletOwner[] = args.embedded
+    ? [
+        { ownerAddress: args.embedded, ownerIndex: 0 },
+        { ownerAddress: args.external, ownerIndex: 1 },
+      ]
+    : [{ ownerAddress: args.external, ownerIndex: 1 }];
+
+  try {
+    const onChain = await getSmartWalletOwners(args.client, args.smartWallet);
+    const owners: SmartWalletOwner[] = onChain
+      .filter(
+        (o): o is OnChainOwner & { address: Address } => o.address !== null,
+      )
+      .map((o) => ({ ownerAddress: o.address, ownerIndex: o.index }));
+    // Only trust the on-chain set if it contains the EOA we actually sign with.
+    if (owners.some((o) => isAddressEqual(o.ownerAddress, args.external))) {
+      return owners;
+    }
+  } catch {
+    // fall through to the deploy-order assumption
+  }
+  return fallback;
 }
 
 /**
@@ -112,24 +164,27 @@ export const createCliSmartWalletProvider = async (
   });
   const embedded = resolveEmbeddedWallet(session);
 
+  const client =
+    opts.client ??
+    createPublicClient({
+      chain: base,
+      transport: http(opts.rpcUrl ?? DEFAULT_BASE_RPC),
+    });
+
   const smartWallet = await resolveSmartWalletAddress(
     account.address,
     embedded,
-    opts,
+    client,
   );
 
-  // Owners in deploy order: index 0 = embedded (Privy), index 1 = external EOA.
-  // We sign as the external EOA, so the index lookup only needs to *find* it;
-  // include the embedded owner when known so the set is accurate. The list must
-  // always contain the external EOA — getOwnerIndexForWallet otherwise falls back
-  // to index 0 while we sign with the external key, producing an invalid
-  // ERC-1271 signature.
-  const owners: SmartWalletOwner[] = embedded
-    ? [
-        { ownerAddress: embedded, ownerIndex: 0 },
-        { ownerAddress: account.address, ownerIndex: 1 },
-      ]
-    : [{ ownerAddress: account.address, ownerIndex: 1 }];
+  // Wrap ERC-1271 signatures with the owner index the smart wallet actually uses
+  // on-chain, not a deploy-order guess — see resolveOwners.
+  const owners = await resolveOwners({
+    client,
+    smartWallet,
+    external: account.address,
+    embedded,
+  });
 
   return {
     getSmartWalletAddress: () => smartWallet,

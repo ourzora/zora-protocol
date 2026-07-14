@@ -72,6 +72,21 @@ export const isNativeBindingError = (err: unknown): boolean => {
 };
 
 /**
+ * True when `err` is XMTP's per-inbox installation cap being hit: a client can't
+ * register because the inbox already has the maximum (10) installations. libxmtp
+ * surfaces this as `ClientBuilderError::Identity … has already registered 10/10
+ * installations. Please revoke existing installations first.` — a runtime error
+ * from the loaded binding, distinct from a binding *load* failure.
+ */
+export const isInstallationLimitError = (err: unknown): boolean => {
+  const text = errorChainText(err);
+  return (
+    /registered \d+\/\d+ installations/i.test(text) ||
+    /revoke existing installations/i.test(text)
+  );
+};
+
+/**
  * Runtime glibc version (e.g. "2.36"), or undefined on musl / when unknown.
  * Exported so the SDK selector (load-xmtp-sdk.ts) shares one implementation.
  * `process.report.getReport()` returns a JS object; we also accept a JSON string

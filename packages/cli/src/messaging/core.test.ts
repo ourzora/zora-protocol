@@ -48,6 +48,9 @@ const fakeClient = (
   sendText: vi.fn(async () => msg({ fromSelf: true, senderAddress: SELF })),
   setConsent: vi.fn(async () => {}),
   streamAllMessages: () => (async function* () {})(),
+  listInstallations: vi.fn(async () => []),
+  revokeInstallations: vi.fn(async () => {}),
+  revokeOtherInstallations: vi.fn(async () => {}),
   close: vi.fn(async () => {}),
   ...overrides,
 });
@@ -168,12 +171,25 @@ describe("sendReply", () => {
     expect(gate).toBeUndefined();
     expect(deps.checkNewDmConversationAllowed).not.toHaveBeenCalled();
   });
+
+  it("syncs before sending so a reply resolves to an existing conversation", async () => {
+    // A request that arrived on the background-listener installation must be
+    // synced into this store before sendText, or it would be treated as a new
+    // (gated) conversation instead of a reply to the existing thread.
+    const client = fakeClient();
+    const deps = fakeDeps();
+    await sendReply(client, PEER, "yo", { token: "jwt", deps });
+    expect(client.sync).toHaveBeenCalledWith(["allowed", "unknown"]);
+  });
 });
 
 describe("setConsentForPeer", () => {
-  it("delegates to the client", async () => {
+  it("syncs first, then sets consent on the client", async () => {
+    // Sync first so a request that first arrived on another installation (e.g.
+    // the background listener) is present locally before we look it up.
     const client = fakeClient();
     await setConsentForPeer(client, PEER, "denied");
+    expect(client.sync).toHaveBeenCalledWith(["allowed", "unknown"]);
     expect(client.setConsent).toHaveBeenCalledWith(PEER, "denied");
   });
 });

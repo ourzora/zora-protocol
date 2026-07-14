@@ -63,12 +63,39 @@ import { getAgentWallet, getSmartWalletAddress } from "../lib/config.js";
 import { createSmartWalletAuth } from "./identity.js";
 import { createCliSmartWalletProvider } from "./cli-auth-provider.js";
 
-// A lightweight ChainClient injected for the predict/deployed fallback path.
-const fakeClient = (deployed: boolean) => ({
-  readContract: vi.fn(async () => PREDICTED_SCW),
-  getCode: vi.fn(async () => (deployed ? ("0x1234" as Hex) : ("0x" as Hex))),
-  call: vi.fn(),
-});
+/** A 32-byte, left-padded owner word as `ownerAtIndex` returns for an address. */
+const ownerWord = (addr: Address): Hex =>
+  `0x${addr.slice(2).toLowerCase().padStart(64, "0")}`;
+
+/**
+ * A ChainClient that serves the smart wallet's owner set (`nextOwnerIndex` /
+ * `ownerAtIndex`) from `owners`, the predicted address for the deploy-derivation
+ * `readContract`, and deploy status via `getCode`. Pass `throwOnRead` to model an
+ * RPC failure and exercise the deploy-order fallback.
+ */
+const fakeClient = (
+  opts: { deployed?: boolean; owners?: Address[]; throwOnRead?: boolean } = {},
+) => {
+  const owners = opts.owners ?? [];
+  return {
+    readContract: vi.fn(
+      async (args: { functionName: string; args?: readonly unknown[] }) => {
+        if (opts.throwOnRead) throw new Error("rpc down");
+        if (args.functionName === "nextOwnerIndex")
+          return BigInt(owners.length);
+        if (args.functionName === "ownerAtIndex") {
+          const index = Number((args.args as [bigint])[0]);
+          return owners[index] ? ownerWord(owners[index]) : ("0x" as Hex);
+        }
+        return PREDICTED_SCW; // predictAddress
+      },
+    ),
+    getCode: vi.fn(async () =>
+      opts.deployed ? ("0x1234" as Hex) : ("0x" as Hex),
+    ),
+    call: vi.fn(),
+  };
+};
 
 afterEach(() => vi.clearAllMocks());
 
@@ -76,15 +103,59 @@ describe("createCliSmartWalletProvider", () => {
   it("authenticates via the cached/refreshing Privy session, not a fresh SIWE every time", async () => {
     const provider = await createCliSmartWalletProvider({
       privateKey: PRIVATE_KEY,
+      client: fakeClient({ owners: [EMBEDDED, EXTERNAL] }),
     });
     expect(provider.getSmartWalletAddress()).toBe(CONFIGURED_SCW);
     expect(provider.getOwnerAddress()).toBe(EXTERNAL);
     expect(ensurePrivySession).toHaveBeenCalledTimes(1);
   });
 
-  it("places the external EOA at owner index 1, embedded at 0", async () => {
+  it("resolves the owner set (and indices) from the wallet's on-chain layout", async () => {
     const provider = await createCliSmartWalletProvider({
       privateKey: PRIVATE_KEY,
+      client: fakeClient({ owners: [EMBEDDED, EXTERNAL] }),
+    });
+    expect(provider.getOwners()).toEqual([
+      { ownerAddress: EMBEDDED, ownerIndex: 0 },
+      { ownerAddress: EXTERNAL, ownerIndex: 1 },
+    ]);
+  });
+
+  it("uses the real index when the external EOA is the sole owner at index 0", async () => {
+    // The regression: the old code hardcoded the external EOA at index 1, so its
+    // ERC-1271 signature was rejected on wallets like this one.
+    const provider = await createCliSmartWalletProvider({
+      privateKey: PRIVATE_KEY,
+      client: fakeClient({ owners: [EXTERNAL] }),
+    });
+    expect(provider.getOwners()).toEqual([
+      { ownerAddress: EXTERNAL, ownerIndex: 0 },
+    ]);
+
+    const { signerSpec } = createSmartWalletAuth(provider);
+    const bytes = await signerSpec.signMessage("hello xmtp");
+    const [decoded] = decodeAbiParameters(
+      [
+        {
+          components: [
+            { name: "ownerIndex", type: "uint8" },
+            { name: "signatureData", type: "bytes" },
+          ],
+          type: "tuple",
+        },
+      ],
+      toHex(bytes),
+    ) as [{ ownerIndex: number; signatureData: Hex }];
+    expect(decoded.ownerIndex).toBe(0);
+  });
+
+  it("falls back to the deploy-order assumption if the owner read fails", async () => {
+    vi.mocked(getAgentWallet).mockReturnValueOnce({
+      embeddedWalletAddress: EMBEDDED,
+    } as ReturnType<typeof getAgentWallet>);
+    const provider = await createCliSmartWalletProvider({
+      privateKey: PRIVATE_KEY,
+      client: fakeClient({ throwOnRead: true }),
     });
     expect(provider.getOwners()).toEqual([
       { ownerAddress: EMBEDDED, ownerIndex: 0 },
@@ -95,15 +166,17 @@ describe("createCliSmartWalletProvider", () => {
   it("signHash raw-signs the 32-byte hash (no EIP-191 prefix), recovering to the external EOA", async () => {
     const provider = await createCliSmartWalletProvider({
       privateKey: PRIVATE_KEY,
+      client: fakeClient({ owners: [EMBEDDED, EXTERNAL] }),
     });
     const hash = hashMessage("gm");
     const signature = await provider.signHash(hash);
     expect(await recoverAddress({ hash, signature })).toBe(EXTERNAL);
   });
 
-  it("end-to-end: createSmartWalletAuth wraps with owner index 1, recovering to the external EOA", async () => {
+  it("end-to-end: createSmartWalletAuth wraps with the on-chain owner index, recovering to the external EOA", async () => {
     const provider = await createCliSmartWalletProvider({
       privateKey: PRIVATE_KEY,
+      client: fakeClient({ owners: [EMBEDDED, EXTERNAL] }),
     });
     const { signerSpec } = createSmartWalletAuth(provider);
     const bytes = await signerSpec.signMessage("hello xmtp");
@@ -138,19 +211,19 @@ describe("createCliSmartWalletProvider", () => {
   it("returns the session's Privy JWT from getAccessToken", async () => {
     const provider = await createCliSmartWalletProvider({
       privateKey: PRIVATE_KEY,
+      client: fakeClient({ owners: [EMBEDDED, EXTERNAL] }),
     });
     expect(await provider.getAccessToken()).toBe("privy.jwt.token");
   });
 
   it("derives + verifies the address on-chain when config has none", async () => {
     vi.mocked(getSmartWalletAddress).mockReturnValueOnce(undefined);
-    const client = fakeClient(true);
+    const client = fakeClient({ deployed: true, owners: [EXTERNAL] });
     const provider = await createCliSmartWalletProvider({
       privateKey: PRIVATE_KEY,
       client,
     });
     expect(provider.getSmartWalletAddress()).toBe(PREDICTED_SCW);
-    expect(client.readContract).toHaveBeenCalledTimes(1);
     expect(client.getCode).toHaveBeenCalledTimes(1);
   });
 
@@ -159,64 +232,28 @@ describe("createCliSmartWalletProvider", () => {
     await expect(
       createCliSmartWalletProvider({
         privateKey: PRIVATE_KEY,
-        client: fakeClient(false),
+        client: fakeClient({ deployed: false }),
       }),
     ).rejects.toThrow(/not deployed/);
   });
 
   // A cached or refresh-token session carries no linked accounts. With the smart
-  // wallet already configured, that's fine — we never need the embedded owner, so
-  // no fresh SIWE is forced just to read it.
+  // wallet already configured, that's fine — the owner set comes from on-chain,
+  // so we never need the embedded owner and no fresh SIWE is forced to read it.
   it("works from a cached session (no linked accounts) when the smart wallet is configured", async () => {
     vi.mocked(ensurePrivySession).mockResolvedValueOnce(CACHED_SESSION);
     const provider = await createCliSmartWalletProvider({
       privateKey: PRIVATE_KEY,
+      client: fakeClient({ owners: [EXTERNAL] }),
     });
     expect(provider.getSmartWalletAddress()).toBe(CONFIGURED_SCW);
     expect(await provider.getAccessToken()).toBe("privy.jwt.token");
-    // No embedded owner is known, so the set is the signing EOA alone — and we
-    // must not have consulted the (empty) linked accounts to fabricate one.
+    // On-chain resolution finds the sole external owner at index 0; we never
+    // consulted the (empty) linked accounts to fabricate an embedded owner.
     expect(provider.getOwners()).toEqual([
-      { ownerAddress: EXTERNAL, ownerIndex: 1 },
+      { ownerAddress: EXTERNAL, ownerIndex: 0 },
     ]);
     expect(findEmbeddedWallet).not.toHaveBeenCalled();
-  });
-
-  // When the session has no linked accounts, the embedded owner is recovered from
-  // the identity `zora agent create` persisted, restoring the full owner set.
-  it("falls back to the persisted agent embedded wallet when the session has no linked accounts", async () => {
-    vi.mocked(ensurePrivySession).mockResolvedValueOnce(CACHED_SESSION);
-    vi.mocked(getAgentWallet).mockReturnValueOnce({
-      embeddedWalletAddress: EMBEDDED,
-    } as ReturnType<typeof getAgentWallet>);
-    const provider = await createCliSmartWalletProvider({
-      privateKey: PRIVATE_KEY,
-    });
-    expect(provider.getOwners()).toEqual([
-      { ownerAddress: EMBEDDED, ownerIndex: 0 },
-      { ownerAddress: EXTERNAL, ownerIndex: 1 },
-    ]);
-    expect(findEmbeddedWallet).not.toHaveBeenCalled();
-  });
-
-  // Even on a fresh SIWE session (linked accounts were read) the embedded owner
-  // can be absent from them; we still recover it from the persisted agent
-  // identity rather than dropping it from the owner set.
-  it("falls back to the persisted agent embedded wallet when a SIWE session's linked accounts lack one", async () => {
-    vi.mocked(findEmbeddedWallet).mockReturnValueOnce(undefined);
-    vi.mocked(getAgentWallet).mockReturnValueOnce({
-      embeddedWalletAddress: EMBEDDED,
-    } as ReturnType<typeof getAgentWallet>);
-    const provider = await createCliSmartWalletProvider({
-      privateKey: PRIVATE_KEY,
-    });
-    // The session's linked accounts were consulted first (and came up empty)…
-    expect(findEmbeddedWallet).toHaveBeenCalledTimes(1);
-    // …then the persisted identity completed the owner set.
-    expect(provider.getOwners()).toEqual([
-      { ownerAddress: EMBEDDED, ownerIndex: 0 },
-      { ownerAddress: EXTERNAL, ownerIndex: 1 },
-    ]);
   });
 
   // The embedded owner is only mandatory when the smart wallet must be derived
@@ -225,7 +262,10 @@ describe("createCliSmartWalletProvider", () => {
     vi.mocked(getSmartWalletAddress).mockReturnValueOnce(undefined);
     vi.mocked(findEmbeddedWallet).mockReturnValueOnce(undefined);
     await expect(
-      createCliSmartWalletProvider({ privateKey: PRIVATE_KEY }),
+      createCliSmartWalletProvider({
+        privateKey: PRIVATE_KEY,
+        client: fakeClient(),
+      }),
     ).rejects.toThrow(/agent create/);
   });
 });
