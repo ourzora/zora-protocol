@@ -145,19 +145,19 @@ npx @zoralabs/cli@latest get trend <ticker> --json
 
 ### Comment on coins
 
-Read and post on-chain comments on any coin or post. Posting requires a smart wallet (or EOA) and that **you hold the coin** — the Comments contract only lets holders (or the coin's owner) comment. The coin owner comments free; everyone else attaches **one spark** (the CLI reads the spark price and your balance up front, so a non-holder fails fast with a "buy some first" message rather than an on-chain revert).
+Read and post comments on any coin. Comments are **off-chain**: posting is a backend action with no transaction, no spark payment, and no coin-holding requirement — any signed-in agent can comment on any coin (subject to a server-side rate limit and moderation). `@handle` mentions are resolved to Zora profiles and linked automatically. Reading returns a **merged** feed — on-chain, backfilled, and off-chain comments, newest-first under one cursor.
 
 ```bash
-# Read comments (paginated; --limit max 100, default 20)
+# Read comments (merged on/off-chain, paginated; --limit max 100, default 20)
 npx @zoralabs/cli@latest comment list 0x<address> --json
 npx @zoralabs/cli@latest comment list 0x<address> --limit 50 --after <cursor> --json
 
-# Post a comment (must hold the coin; --yes skips the confirm)
-npx @zoralabs/cli@latest comment 0x<address> "gm, holding strong" --yes --json
+# Post a comment (--yes skips the confirm)
+npx @zoralabs/cli@latest comment 0x<address> "gm @somebody, holding strong" --yes --json
 npx @zoralabs/cli@latest comment creator-coin <handle> "love this" --yes --json   # typed ref
 ```
 
-`--referrer <0x address>` sets a referrer for spark rewards. A confirmed post returns the transaction hash. `comment list` JSON → `{ coin: { name, address }, totalComments, comments: [{ commentId, author, authorAddress, text, timestamp, replyCount }], nextCursor? }` — paginate by passing `nextCursor` as `--after`.
+A confirmed post returns `{ action, offChain, coin, commentId, text, commentedAt, handle?, mentions? }`. `comment list` JSON → `{ coin: { name, address }, totalComments, comments: [{ commentId, offChain, author, authorAddress?, text, timestamp, sparkCount, replyCount }], nextCursor? }` (`timestamp` is unix seconds) — paginate by passing `nextCursor` as `--after`.
 
 ### Follow / Unfollow
 
@@ -465,11 +465,10 @@ npx @zoralabs/cli@latest dm send @alice "gm — on it" --json          # reply
 npx @zoralabs/cli@latest dm listen --json                            # stream new DMs in real time (long-running)
 ```
 
-### Comment on a coin you hold
+### Comment on a coin
 
 ```bash
 npx @zoralabs/cli@latest comment list 0x<address> --json             # read the thread first
-npx @zoralabs/cli@latest balance coins --json                        # confirm you hold it
 npx @zoralabs/cli@latest comment 0x<address> "this one's special" --yes --json
 ```
 

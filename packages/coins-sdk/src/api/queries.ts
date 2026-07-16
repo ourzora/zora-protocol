@@ -1,6 +1,8 @@
 import {
   GetCoinCommentsData,
   GetCoinCommentsResponse,
+  GetCoinMergedCommentsData,
+  GetCoinMergedCommentsResponse,
   GetCoinData,
   GetCoinHoldersData,
   GetCoinHoldersResponse,
@@ -38,6 +40,7 @@ import {
   getCoin as getCoinSDK,
   getCoins as getCoinsSDK,
   getCoinComments as getCoinCommentsSDK,
+  getCoinMergedComments as getCoinMergedCommentsSDK,
   getCoinHolders as getCoinHoldersSDK,
   getCoinPriceHistory as getCoinPriceHistorySDK,
   getCoinSwaps as getCoinSwapsSDK,
@@ -147,6 +150,28 @@ export const getCoinComments = async (
   options?: RequestOptionsType<GetCoinCommentsData>,
 ): Promise<RequestResult<GetCoinCommentsResponse>> => {
   return await getCoinCommentsSDK({
+    query,
+    ...getApiKeyMeta(),
+    ...options,
+  });
+};
+
+type GetCoinMergedCommentsQuery = GetCoinMergedCommentsData["query"];
+export type { GetCoinMergedCommentsQuery, GetCoinMergedCommentsData };
+export type { GetCoinMergedCommentsResponse } from "../client/types.gen";
+
+/**
+ * Fetches a coin's unified comment feed — on-chain, backfilled, and off-chain
+ * comments — pre-sorted newest-first under a single cursor. Mirrors the
+ * `GraphQLMergedComment` union that web and mobile consume. Unlike
+ * {@link getCoinComments} (on-chain `zoraComments` only), this includes
+ * off-chain comments.
+ */
+export const getCoinMergedComments = async (
+  query: GetCoinMergedCommentsQuery,
+  options?: RequestOptionsType<GetCoinMergedCommentsData>,
+): Promise<RequestResult<GetCoinMergedCommentsResponse>> => {
+  return await getCoinMergedCommentsSDK({
     query,
     ...getApiKeyMeta(),
     ...options,
