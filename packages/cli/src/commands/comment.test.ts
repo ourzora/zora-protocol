@@ -1,35 +1,44 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { type Address, PrivateKeyAccount } from "viem";
+import { type Address } from "viem";
 import { createProgram } from "../test/create-program.js";
 
 vi.mock("@inquirer/confirm");
-vi.mock("../lib/config.js", () => ({
-  getApiKey: vi.fn(),
+// resolveCoinTarget resolves a coin ref via the indexer; stub it so the tests
+// drive the comment path directly without any network.
+vi.mock("../lib/comment-target.js", () => ({ resolveCoinTarget: vi.fn() }));
+vi.mock("../lib/comments.js", () => ({
+  createOffChainComment: vi.fn(),
+  listCoinComments: vi.fn(),
+  MAX_COMMENT_LENGTH: 280,
+  COIN_OFF_CHAIN_TOKEN_ID: "0",
 }));
-vi.mock("../lib/wallet.js");
-vi.mock("@zoralabs/coins-sdk");
-vi.mock("../lib/analytics.js");
+vi.mock("../lib/coin-ref.js", () => ({
+  isCoinTypeKeyword: (s: string) => s === "creator-coin" || s === "trend",
+}));
+vi.mock("../lib/mentions.js", () => ({
+  resolveMentions: vi.fn(),
+  toPlainMentions: (t: string) => t,
+}));
+vi.mock("../lib/config.js", () => ({ getPrivateKey: vi.fn() }));
+vi.mock("../lib/privy-session.js", () => ({ ensurePrivySession: vi.fn() }));
+vi.mock("../lib/wallet.js", () => ({ normalizeKey: (k: string) => k }));
+vi.mock("../lib/analytics.js", () => ({
+  track: vi.fn(),
+  shutdownAnalytics: vi.fn(),
+}));
 
 import confirm from "@inquirer/confirm";
-import {
-  getCoin,
-  getCoinComments,
-  getProfile,
-  prepareUserOperation,
-  submitUserOperation,
-} from "@zoralabs/coins-sdk";
-import { getApiKey } from "../lib/config.js";
-import { createClients, resolveAccounts } from "../lib/wallet.js";
-import { COMMENTS_ADDRESS } from "../lib/comments.js";
+import { resolveCoinTarget } from "../lib/comment-target.js";
+import { resolveMentions } from "../lib/mentions.js";
+import { createOffChainComment, listCoinComments } from "../lib/comments.js";
+import { getPrivateKey } from "../lib/config.js";
+import { ensurePrivySession } from "../lib/privy-session.js";
+import { track } from "../lib/analytics.js";
 import { commentCommand } from "./comment.js";
 
-const COIN_ADDRESS = "0x2bf7bd9c5609ffd0520d6f282713af2fc8dab914" as Address;
-const EOA_ADDRESS = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045" as Address;
-const SMART_WALLET_ADDRESS =
-  "0xAbCdEf0123456789AbCdEf0123456789AbCdEf01" as Address;
-const TX_HASH =
-  "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-const SPARK_VALUE = 1_000_000_000_000n; // 1e12 wei
+const PK = `0x${"a".repeat(64)}`;
+const COIN = "0x2bf7bd9c5609ffd0520d6f282713af2fc8dab914" as Address;
+const TOKEN = "privy.jwt.token";
 
 function run(args: string[]) {
   const program = createProgram(commentCommand);
@@ -39,271 +48,329 @@ function run(args: string[]) {
 describe("comment command", () => {
   let logSpy: ReturnType<typeof vi.spyOn>;
   let errorSpy: ReturnType<typeof vi.spyOn>;
-
-  const publicClient = {
-    readContract: vi.fn(),
-    waitForTransactionReceipt: vi.fn(),
-  };
-  const walletClient = { writeContract: vi.fn() };
-  const bundlerClient = {};
+  let savedEnvKey: string | undefined;
 
   beforeEach(() => {
     logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    vi.spyOn(process, "exit").mockImplementation((code) => {
-      throw new Error(`process.exit(${code})`);
-    });
 
-    vi.mocked(getApiKey).mockReturnValue("test-api-key");
-    vi.mocked(getCoin).mockResolvedValue({
-      data: { zora20Token: { name: "Zora", address: COIN_ADDRESS } },
-    } as any);
-    vi.mocked(resolveAccounts).mockResolvedValue({
-      privateKeyAccount: { address: EOA_ADDRESS } as PrivateKeyAccount,
-      smartWalletAccount: undefined,
-    } as Awaited<ReturnType<typeof resolveAccounts>>);
-    vi.mocked(createClients).mockReturnValue({
-      publicClient,
-      walletClient,
-    } as unknown as ReturnType<typeof createClients>);
+    // The command reads ZORA_PRIVATE_KEY before getPrivateKey(); clear it so the
+    // mocked getPrivateKey is the single source of truth in tests.
+    savedEnvKey = process.env.ZORA_PRIVATE_KEY;
+    delete process.env.ZORA_PRIVATE_KEY;
+
+    vi.mocked(getPrivateKey).mockReturnValue(PK);
+    vi.mocked(ensurePrivySession).mockResolvedValue({
+      accessToken: TOKEN,
+    } as Awaited<ReturnType<typeof ensurePrivySession>>);
+    vi.mocked(resolveCoinTarget).mockResolvedValue({
+      address: COIN,
+      name: "Zora",
+    });
+    // Default: no mentions — the text passes through unchanged.
+    vi.mocked(resolveMentions).mockImplementation(async (t: string) => ({
+      text: t,
+      resolved: [],
+      skipped: [],
+    }));
     vi.mocked(confirm).mockResolvedValue(true);
-
-    // Default reads: spark price set, not the owner, but a holder (balance > 0)
-    // so the post path runs. Individual tests override as needed.
-    publicClient.readContract.mockImplementation((args: any) => {
-      if (args.functionName === "sparkValue")
-        return Promise.resolve(SPARK_VALUE);
-      if (args.functionName === "isOwner") return Promise.resolve(false);
-      if (args.functionName === "balanceOf") return Promise.resolve(1n);
-      return Promise.resolve(false);
+    vi.mocked(createOffChainComment).mockResolvedValue({
+      commentId: "cmt_1",
+      text: "gm",
+      commentedAt: "2026-01-01T00:00:00Z",
+      cursor: "c1",
+      handle: "agent",
+      profileId: "agent",
     });
-    publicClient.waitForTransactionReceipt.mockResolvedValue({});
-    walletClient.writeContract.mockResolvedValue(TX_HASH);
   });
 
   afterEach(() => {
+    if (savedEnvKey !== undefined) process.env.ZORA_PRIVATE_KEY = savedEnvKey;
     vi.restoreAllMocks();
+    vi.clearAllMocks();
   });
 
   function parsedOutput(): any {
     return JSON.parse(logSpy.mock.calls.map((c) => c[0]).join("\n"));
   }
 
-  // --- list (read) ---
+  it("posts an off-chain comment and outputs JSON", async () => {
+    await run([COIN, "gm", "--json"]);
 
-  describe("list", () => {
-    beforeEach(() => {
-      vi.mocked(getCoinComments).mockResolvedValue({
-        data: {
-          zora20Token: {
-            zoraComments: {
-              count: 1,
-              pageInfo: { hasNextPage: false },
-              edges: [
-                {
-                  node: {
-                    commentId: "0xcomment",
-                    userAddress: "0x473de669566008551ce71322e52ebd70c2e44123",
-                    comment: "Zora car!",
-                    timestamp: 1700000000,
-                    userProfile: { handle: "alexciminillo" },
-                    replies: { count: 0 },
-                  },
-                },
-              ],
-            },
-          },
-        },
-      } as any);
+    expect(createOffChainComment).toHaveBeenCalledWith(TOKEN, {
+      chainName: "BaseMainnet",
+      contractAddress: COIN,
+      tokenId: "0",
+      text: "gm",
     });
-
-    it("outputs comments as JSON", async () => {
-      await run(["list", COIN_ADDRESS, "--json"]);
-      const out = parsedOutput();
-      expect(out.totalComments).toBe(1);
-      expect(out.comments[0]).toMatchObject({
-        author: "alexciminillo",
-        authorAddress: "0x473de669566008551ce71322e52ebd70c2e44123",
-        text: "Zora car!",
-        replyCount: 0,
-      });
-      expect(getCoinComments).toHaveBeenCalledWith(
-        expect.objectContaining({ address: COIN_ADDRESS, count: 20 }),
-      );
-    });
-
-    it("renders a static list", async () => {
-      await run(["list", COIN_ADDRESS]);
-      const output = logSpy.mock.calls.map((c) => c[0]).join("\n");
-      expect(output).toContain("@alexciminillo");
-      expect(output).toContain("Zora car!");
-    });
-
-    it("handles a coin with no comments", async () => {
-      vi.mocked(getCoinComments).mockResolvedValue({
-        data: {
-          zora20Token: {
-            zoraComments: {
-              count: 0,
-              pageInfo: { hasNextPage: false },
-              edges: [],
-            },
-          },
-        },
-      } as any);
-      await run(["list", COIN_ADDRESS]);
-      const output = logSpy.mock.calls.map((c) => c[0]).join("\n");
-      expect(output).toContain("No comments yet");
-    });
-
-    it("rejects an invalid --limit", async () => {
-      await expect(
-        run(["list", COIN_ADDRESS, "--limit", "999"]),
-      ).rejects.toThrow("process.exit(1)");
-    });
-
-    it("shows a usage error (not a crash) when no coin is given", async () => {
-      await expect(run(["list"])).rejects.toThrow("process.exit(1)");
-      expect(errorSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Missing coin"),
-      );
+    expect(parsedOutput()).toEqual({
+      action: "comment",
+      offChain: true,
+      coin: { name: "Zora", address: COIN },
+      commentId: "cmt_1",
+      text: "gm",
+      commentedAt: "2026-01-01T00:00:00Z",
+      handle: "agent",
     });
   });
 
-  // --- comment (post) ---
-
-  describe("post", () => {
-    it("errors when text is missing", async () => {
-      await expect(run([COIN_ADDRESS])).rejects.toThrow("process.exit(1)");
-      expect(errorSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Missing comment text"),
-      );
-    });
-
-    it("posts the trailing arg as the comment for an address reference", async () => {
-      await run([COIN_ADDRESS, "hello world", "--yes"]);
-      const call = walletClient.writeContract.mock.calls[0][0];
-      expect(call.args[1]).toBe(COIN_ADDRESS);
-      expect(call.args[3]).toBe("hello world");
-    });
-
-    it("posts the trailing arg as the comment for a typed (creator-coin) reference", async () => {
-      // Regression: a type prefix makes the coin reference span two args, so the
-      // comment text is the third arg — it must not be the coin name.
-      vi.mocked(getProfile).mockResolvedValue({
-        data: { profile: { creatorCoin: { address: COIN_ADDRESS } } },
-      } as any);
-      await run(["creator-coin", "somecreator", "hello world", "--yes"]);
-      const call = walletClient.writeContract.mock.calls[0][0];
-      expect(call.args[1]).toBe(COIN_ADDRESS);
-      expect(call.args[3]).toBe("hello world");
-    });
-
-    it("requires comment text when using a typed reference", async () => {
-      await expect(
-        run(["creator-coin", "somecreator", "--yes"]),
-      ).rejects.toThrow("process.exit(1)");
-      expect(errorSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Missing comment text"),
-      );
-    });
-
-    it("errors on an invalid --referrer", async () => {
-      await expect(
-        run([COIN_ADDRESS, "hi", "--referrer", "nope"]),
-      ).rejects.toThrow("process.exit(1)");
-    });
-
-    it("posts via EOA including one spark when not the owner", async () => {
-      await run([COIN_ADDRESS, "gm", "--yes"]);
-
-      expect(walletClient.writeContract).toHaveBeenCalledTimes(1);
-      const call = walletClient.writeContract.mock.calls[0][0];
-      expect(call).toMatchObject({
-        address: COMMENTS_ADDRESS,
-        functionName: "comment",
-        value: SPARK_VALUE,
-      });
-      // commenter (arg 0) is the EOA; text (arg 3) is the comment
-      expect(call.args[0]).toBe(EOA_ADDRESS);
-      expect(call.args[1]).toBe(COIN_ADDRESS);
-      expect(call.args[3]).toBe("gm");
-      expect(publicClient.waitForTransactionReceipt).toHaveBeenCalled();
-    });
-
-    it("posts for free when the commenter owns the coin", async () => {
-      publicClient.readContract.mockImplementation((args: any) =>
-        args.functionName === "sparkValue"
-          ? Promise.resolve(SPARK_VALUE)
-          : Promise.resolve(true),
-      );
-      await run([COIN_ADDRESS, "gm", "--yes"]);
-      const call = walletClient.writeContract.mock.calls[0][0];
-      expect(call.value).toBe(0n);
-    });
-
-    it("posts via smart wallet when configured", async () => {
-      vi.mocked(resolveAccounts).mockResolvedValue({
-        privateKeyAccount: { address: EOA_ADDRESS } as PrivateKeyAccount,
-        smartWalletAccount: { address: SMART_WALLET_ADDRESS } as any,
-      } as Awaited<ReturnType<typeof resolveAccounts>>);
-      vi.mocked(createClients).mockReturnValue({
-        publicClient,
-        walletClient,
-        bundlerClient,
-      } as unknown as ReturnType<typeof createClients>);
-      vi.mocked(prepareUserOperation).mockResolvedValue({} as any);
-      vi.mocked(submitUserOperation).mockResolvedValue({
+  it("tracks a cli_comment post success event", async () => {
+    await run([COIN, "gm", "--json"]);
+    expect(track).toHaveBeenCalledWith(
+      "cli_comment",
+      expect.objectContaining({
+        action: "post",
+        coin_address: COIN,
         success: true,
-        receipt: { transactionHash: TX_HASH },
-      } as any);
+        off_chain: true,
+        comment_id: "cmt_1",
+      }),
+    );
+  });
 
-      await run([COIN_ADDRESS, "gm", "--yes", "--json"]);
-
-      expect(submitUserOperation).toHaveBeenCalled();
-      expect(walletClient.writeContract).not.toHaveBeenCalled();
-      const out = parsedOutput();
-      expect(out.commenter).toBe(SMART_WALLET_ADDRESS);
-      expect(out.tx).toBe(TX_HASH);
+  it("posts the mention-encoded text and reports the mention count", async () => {
+    const encoded = "gm [@alice](https://zora.co/@0xabc) welcome";
+    vi.mocked(resolveMentions).mockResolvedValue({
+      text: encoded,
+      resolved: [{ handle: "alice", address: "0xabc" }],
+      skipped: [],
     });
 
-    it("fails fast (no transaction) when the commenter holds none of the coin", async () => {
-      publicClient.readContract.mockImplementation((args: any) => {
-        if (args.functionName === "sparkValue")
-          return Promise.resolve(SPARK_VALUE);
-        if (args.functionName === "isOwner") return Promise.resolve(false);
-        if (args.functionName === "balanceOf") return Promise.resolve(0n);
-        return Promise.resolve(false);
-      });
-      await expect(run([COIN_ADDRESS, "gm", "--yes"])).rejects.toThrow(
-        "process.exit(1)",
-      );
-      expect(errorSpy).toHaveBeenCalledWith(
-        expect.stringContaining("must hold Zora to comment"),
-      );
-      expect(walletClient.writeContract).not.toHaveBeenCalled();
-    });
+    await run([COIN, "gm @alice welcome", "--json"]);
 
-    it("gives a holder-requirement message when the contract rejects a non-holder", async () => {
-      walletClient.writeContract.mockRejectedValue(
-        new Error(
-          "Execution reverted: custom error 0xd8a26f99: NotTokenHolderOrAdmin()",
-        ),
-      );
-      await expect(run([COIN_ADDRESS, "gm", "--yes"])).rejects.toThrow(
-        "process.exit(1)",
-      );
-      expect(errorSpy).toHaveBeenCalledWith(
-        expect.stringContaining("must hold Zora to comment"),
-      );
-    });
+    expect(resolveMentions).toHaveBeenCalledWith("gm @alice welcome");
+    expect(createOffChainComment).toHaveBeenCalledWith(
+      TOKEN,
+      expect.objectContaining({ text: encoded }),
+    );
+    expect(track).toHaveBeenCalledWith(
+      "cli_comment",
+      expect.objectContaining({ success: true, mention_count: 1 }),
+    );
+  });
 
-    it("aborts when the user declines confirmation", async () => {
-      vi.mocked(confirm).mockResolvedValue(false);
-      await expect(run([COIN_ADDRESS, "gm"])).rejects.toThrow(
-        "process.exit(0)",
-      );
-      expect(walletClient.writeContract).not.toHaveBeenCalled();
+  it("rejects when the mention-encoded text exceeds the length limit", async () => {
+    // A short typed comment can blow past 280 once a mention expands to a token.
+    vi.mocked(resolveMentions).mockResolvedValue({
+      text: "x".repeat(281),
+      resolved: [{ handle: "alice", address: "0xabc" }],
+      skipped: [],
     });
+    await expect(run([COIN, "gm @alice", "--json"])).rejects.toThrow(
+      "process.exit(1)",
+    );
+    expect(createOffChainComment).not.toHaveBeenCalled();
+  });
+
+  it("does not require holding the coin (no on-chain gate)", async () => {
+    // No balance check runs — a successful post is proof the off-chain path
+    // never gates on holdings (unlike the retired on-chain comment path).
+    await run([COIN, "gm", "--yes"]);
+    expect(createOffChainComment).toHaveBeenCalledOnce();
+  });
+
+  it("shifts the text to the third arg with a type prefix", async () => {
+    await run(["creator-coin", "myname", "gm", "--json"]);
+    expect(resolveCoinTarget).toHaveBeenCalledWith(
+      true,
+      "creator-coin",
+      "myname",
+      "comment",
+    );
+    expect(createOffChainComment).toHaveBeenCalledWith(
+      TOKEN,
+      expect.objectContaining({ text: "gm" }),
+    );
+  });
+
+  it("prompts for confirmation and aborts when declined", async () => {
+    vi.mocked(confirm).mockResolvedValue(false);
+    // Declining is a clean exit (code 0), surfaced as a CliExitError.
+    await expect(run([COIN, "gm"])).rejects.toThrow("process.exit(0)");
+    expect(confirm).toHaveBeenCalled();
+    expect(createOffChainComment).not.toHaveBeenCalled();
+    expect(errorSpy).toHaveBeenCalledWith("Aborted.");
+  });
+
+  it("errors when the comment text is missing", async () => {
+    await expect(run([COIN, "--json"])).rejects.toThrow("process.exit(1)");
+    expect(createOffChainComment).not.toHaveBeenCalled();
+  });
+
+  it("rejects a comment over the length limit", async () => {
+    const tooLong = "x".repeat(281);
+    await expect(run([COIN, tooLong, "--json"])).rejects.toThrow(
+      "process.exit(1)",
+    );
+    expect(createOffChainComment).not.toHaveBeenCalled();
+  });
+
+  it("errors with setup guidance when no wallet is configured", async () => {
+    vi.mocked(getPrivateKey).mockReturnValue(undefined);
+    await expect(run([COIN, "gm", "--json"])).rejects.toThrow(
+      "process.exit(1)",
+    );
+    expect(createOffChainComment).not.toHaveBeenCalled();
+  });
+
+  it("tracks a cli_comment post failure event and exits when the mutation fails", async () => {
+    vi.mocked(createOffChainComment).mockRejectedValue(
+      new Error("Rate limit exceeded"),
+    );
+    await expect(run([COIN, "gm", "--json"])).rejects.toThrow(
+      "process.exit(1)",
+    );
+    expect(track).toHaveBeenCalledWith(
+      "cli_comment",
+      expect.objectContaining({
+        action: "post",
+        coin_address: COIN,
+        success: false,
+        off_chain: true,
+        mention_count: 0,
+        error_type: "Error",
+      }),
+    );
+  });
+});
+
+describe("comment list command", () => {
+  let logSpy: ReturnType<typeof vi.spyOn>;
+  let errorSpy: ReturnType<typeof vi.spyOn>;
+
+  function runList(args: string[]) {
+    const program = createProgram(commentCommand);
+    return program.parseAsync(["comment", "list", ...args], {
+      from: "user",
+    });
+  }
+
+  beforeEach(() => {
+    logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    vi.mocked(resolveCoinTarget).mockResolvedValue({
+      address: COIN,
+      name: "Zora",
+    });
+    vi.mocked(listCoinComments).mockResolvedValue({
+      comments: [
+        {
+          commentId: "onchain-1",
+          offChain: false,
+          text: "gm",
+          timestamp: 1_700_000_000,
+          handle: "alice",
+          authorAddress: "0xabc",
+          sparkCount: 0,
+          replyCount: 2,
+        },
+        {
+          commentId: "offchain-1",
+          offChain: true,
+          text: "welcome",
+          timestamp: 1_700_000_100,
+          handle: "bob",
+          sparkCount: 3,
+          replyCount: 0,
+        },
+      ],
+      totalCount: 42,
+      nextCursor: "cursor-2",
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.clearAllMocks();
+  });
+
+  function parsedOutput(): any {
+    return JSON.parse(logSpy.mock.calls.map((c) => c[0]).join("\n"));
+  }
+
+  it("lists merged comments as JSON with a next cursor", async () => {
+    await runList([COIN, "--json"]);
+    expect(listCoinComments).toHaveBeenCalledWith({
+      chainId: 8453,
+      address: COIN,
+      first: 20,
+      after: undefined,
+    });
+    const out = parsedOutput();
+    expect(out.totalComments).toBe(42);
+    expect(out.nextCursor).toBe("cursor-2");
+    expect(out.comments).toHaveLength(2);
+    expect(out.comments[0]).toMatchObject({
+      commentId: "onchain-1",
+      offChain: false,
+      authorAddress: "0xabc",
+    });
+    expect(out.comments[1]).toMatchObject({
+      commentId: "offchain-1",
+      offChain: true,
+    });
+    // Off-chain comments have no wallet address.
+    expect(out.comments[1].authorAddress).toBeUndefined();
+  });
+
+  it("passes --limit and --after through to the query", async () => {
+    await runList([COIN, "--limit", "50", "--after", "cursor-1", "--json"]);
+    expect(listCoinComments).toHaveBeenCalledWith({
+      chainId: 8453,
+      address: COIN,
+      first: 50,
+      after: "cursor-1",
+    });
+  });
+
+  it("rejects an out-of-range --limit", async () => {
+    await expect(runList([COIN, "--limit", "500"])).rejects.toThrow(
+      "process.exit(1)",
+    );
+    expect(listCoinComments).not.toHaveBeenCalled();
+  });
+
+  it("tracks a cli_comment list success event with on/off-chain counts", async () => {
+    await runList([COIN, "--json"]);
+    expect(track).toHaveBeenCalledWith(
+      "cli_comment",
+      expect.objectContaining({
+        action: "list",
+        coin_address: COIN,
+        success: true,
+        result_count: 2,
+        offchain_count: 1,
+        onchain_count: 1,
+      }),
+    );
+  });
+
+  it("renders an empty-state message when there are no comments", async () => {
+    vi.mocked(listCoinComments).mockResolvedValue({
+      comments: [],
+      totalCount: 0,
+    });
+    await runList([COIN]);
+    const out = logSpy.mock.calls.map((c) => c[0]).join("\n");
+    expect(out).toContain("No comments yet on Zora.");
+  });
+
+  it("surfaces a fetch failure and tracks a cli_comment list failure event", async () => {
+    vi.mocked(listCoinComments).mockRejectedValue(new Error("network down"));
+    // Non-JSON so the error routes to console.error (JSON mode writes to stdout).
+    await expect(runList([COIN])).rejects.toThrow("process.exit(1)");
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Failed to fetch comments"),
+    );
+    expect(track).toHaveBeenCalledWith(
+      "cli_comment",
+      expect.objectContaining({
+        action: "list",
+        coin_address: COIN,
+        success: false,
+        error_type: "Error",
+      }),
+    );
   });
 });
