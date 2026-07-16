@@ -1,6 +1,12 @@
 # Coins SDK Changelog
 
 
+## 0.8.0
+
+### Minor Changes
+
+- 0ce51caec: Add `getCoinMergedComments` for a coin's unified comment feed. It returns on-chain, backfilled, and off-chain comments pre-sorted newest-first under a single cursor — mirroring the `GraphQLMergedComment` union the Zora web and mobile apps consume. The existing `getCoinComments` is unchanged (on-chain `zoraComments` only).
+
 ## 0.7.1
 
 ### Patch Changes
