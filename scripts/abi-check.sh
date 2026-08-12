@@ -36,10 +36,11 @@ COMMAND=$1
 # Auto-discover interfaces: find all .sol files starting with 'I' in src/
 discover_interfaces() {
   local interfaces=""
-  for file in $(find src -name 'I*.sol' -type f 2>/dev/null | sort); do
-    local name=$(basename "$file" .sol)
+  while IFS= read -r file; do
+    local name
+    name=$(basename "$file" .sol)
     interfaces="$interfaces $name"
-  done
+  done < <(find src -name 'I*.sol' -type f 2>/dev/null | sort)
   echo "$interfaces"
 }
 
