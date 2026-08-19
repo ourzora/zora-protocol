@@ -1,10 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   encodeAbiParameters,
   encodeEventTopics,
   erc20Abi,
+  PrivateKeyAccount,
   type Address,
 } from "viem";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@inquirer/confirm");
 vi.mock("../lib/config.js", () => ({
@@ -17,7 +18,7 @@ vi.mock("../lib/wallet-balances.js");
 
 import confirm from "@inquirer/confirm";
 import {
-  createTradeCall,
+  createQuote,
   getCoin,
   getProfile,
   getTrend,
@@ -25,10 +26,10 @@ import {
   tradeCoin,
 } from "@zoralabs/coins-sdk";
 import { getApiKey } from "../lib/config.js";
-import { createClients, resolveAccount } from "../lib/wallet.js";
 import { fetchTokenPriceUsd } from "../lib/wallet-balances.js";
-import { sellCommand } from "./sell.js";
+import { createClients, resolveAccounts } from "../lib/wallet.js";
 import { createProgram } from "../test/create-program.js";
+import { sellCommand } from "./sell.js";
 
 const COIN_ADDRESS = "0x1234567890abcdef1234567890abcdef12345678" as Address;
 const ACCOUNT_ADDRESS = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045" as Address;
@@ -81,9 +82,12 @@ describe("sell command", () => {
     });
 
     vi.mocked(getApiKey).mockReturnValue("test-api-key");
-    vi.mocked(resolveAccount).mockReturnValue({
-      address: ACCOUNT_ADDRESS,
-    } as ReturnType<typeof resolveAccount>);
+    vi.mocked(resolveAccounts).mockResolvedValue({
+      privateKeyAccount: {
+        address: ACCOUNT_ADDRESS,
+      } as PrivateKeyAccount,
+      smartWalletAccount: undefined,
+    } as Awaited<ReturnType<typeof resolveAccounts>>);
     vi.mocked(createClients).mockReturnValue({
       publicClient,
       walletClient,
@@ -103,11 +107,11 @@ describe("sell command", () => {
     vi.mocked(getTrend).mockResolvedValue({
       data: { trendCoin: null },
     } as Awaited<ReturnType<typeof getTrend>>);
-    vi.mocked(createTradeCall).mockResolvedValue({
+    vi.mocked(createQuote).mockResolvedValue({
       quote: {
         amountOut: "20000000",
       },
-    } as Awaited<ReturnType<typeof createTradeCall>>);
+    } as Awaited<ReturnType<typeof createQuote>>);
     vi.mocked(tradeCoin).mockResolvedValue({
       transactionHash:
         "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
@@ -258,9 +262,9 @@ describe("sell command", () => {
   });
 
   it("exits with error when quote returns zero", async () => {
-    vi.mocked(createTradeCall).mockResolvedValue({
+    vi.mocked(createQuote).mockResolvedValue({
       quote: { amountOut: "0" },
-    } as Awaited<ReturnType<typeof createTradeCall>>);
+    } as Awaited<ReturnType<typeof createQuote>>);
 
     await expect(
       runSell([COIN_ADDRESS, "--amount", "1", "--yes"]),
@@ -271,7 +275,7 @@ describe("sell command", () => {
   });
 
   it("exits with error when quote throws", async () => {
-    vi.mocked(createTradeCall).mockRejectedValue(new Error("API down"));
+    vi.mocked(createQuote).mockRejectedValue(new Error("API down"));
 
     await expect(
       runSell([COIN_ADDRESS, "--amount", "1", "--yes"]),
@@ -313,7 +317,7 @@ describe("sell command", () => {
     ]);
 
     expect(setApiKey).toHaveBeenCalledWith("test-api-key");
-    expect(createTradeCall).toHaveBeenCalledWith(
+    expect(createQuote).toHaveBeenCalledWith(
       expect.objectContaining({
         amountIn: 1500000000000000000n,
         buy: {
@@ -348,7 +352,7 @@ describe("sell command", () => {
 
     await runSell([COIN_ADDRESS, "--all", "--yes"]);
 
-    expect(createTradeCall).toHaveBeenCalledWith(
+    expect(createQuote).toHaveBeenCalledWith(
       expect.objectContaining({
         amountIn: 1500000000000000000n,
       }),
@@ -360,7 +364,7 @@ describe("sell command", () => {
 
     await runSell([COIN_ADDRESS, "--percent", "100", "--yes"]);
 
-    expect(createTradeCall).toHaveBeenCalledWith(
+    expect(createQuote).toHaveBeenCalledWith(
       expect.objectContaining({
         amountIn: 1500000000000000000n,
       }),
@@ -368,11 +372,11 @@ describe("sell command", () => {
   });
 
   it("falls back to the quote for ETH output", async () => {
-    vi.mocked(createTradeCall).mockResolvedValue({
+    vi.mocked(createQuote).mockResolvedValue({
       quote: {
         amountOut: "100000000000000000",
       },
-    } as Awaited<ReturnType<typeof createTradeCall>>);
+    } as Awaited<ReturnType<typeof createQuote>>);
 
     await runSell([
       COIN_ADDRESS,
@@ -420,7 +424,7 @@ describe("sell command", () => {
       await runSell([COIN_ADDRESS, "--usd", "10", "--yes"]);
 
       // $10 / $2.0 per coin = 5 coins = 5000000000000000000 (18 decimals)
-      expect(createTradeCall).toHaveBeenCalledWith(
+      expect(createQuote).toHaveBeenCalledWith(
         expect.objectContaining({
           amountIn: 5000000000000000000n,
         }),
@@ -469,7 +473,7 @@ describe("sell command", () => {
         "--yes",
       ]);
 
-      expect(createTradeCall).toHaveBeenCalledWith(
+      expect(createQuote).toHaveBeenCalledWith(
         expect.objectContaining({
           buy: {
             type: "erc20",
@@ -525,9 +529,7 @@ describe("sell command", () => {
     });
 
     it("prints error details when quote throws", async () => {
-      vi.mocked(createTradeCall).mockRejectedValue(
-        new Error("server exploded"),
-      );
+      vi.mocked(createQuote).mockRejectedValue(new Error("server exploded"));
 
       await expect(
         runSell([COIN_ADDRESS, "--amount", "1", "--yes", "--debug"]),
@@ -607,7 +609,7 @@ describe("sell command", () => {
 
       await runSell(["testname", "--amount", "1", "--yes"]);
 
-      expect(createTradeCall).toHaveBeenCalledWith(
+      expect(createQuote).toHaveBeenCalledWith(
         expect.objectContaining({
           sell: expect.objectContaining({ address: CREATOR_ADDRESS }),
         }),
@@ -626,7 +628,7 @@ describe("sell command", () => {
 
       await runSell(["testname", "--amount", "1", "--yes"]);
 
-      expect(createTradeCall).toHaveBeenCalledWith(
+      expect(createQuote).toHaveBeenCalledWith(
         expect.objectContaining({
           sell: expect.objectContaining({ address: TREND_ADDRESS }),
         }),
@@ -661,7 +663,7 @@ describe("sell command", () => {
   });
 
   it("shows suggestion when quote fails", async () => {
-    vi.mocked(createTradeCall).mockRejectedValue(new Error("bad request"));
+    vi.mocked(createQuote).mockRejectedValue(new Error("bad request"));
 
     await expect(
       runSell([COIN_ADDRESS, "--amount", "1", "--yes"]),

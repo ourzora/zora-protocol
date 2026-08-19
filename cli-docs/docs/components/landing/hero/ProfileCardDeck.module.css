@@ -1,0 +1,115 @@
+.viewport {
+  /* Reserve the TALLEST stage (the DM panel, ~335px) so swapping the card row
+     <-> DM panel never shifts the CTA / agent row below. popLayout pulls the
+     exiting stage out of flow; this min-height holds the cell. Tunable. */
+  display: grid;
+  /* Explicit single column so the track is bounded by the container width and
+     never grows to the content's max-content — that blowout is what let the
+     deck escape the viewport on mobile. */
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  max-width: 1000px;
+  min-width: 0;
+  min-height: 352px;
+  align-items: center;
+  justify-items: center;
+}
+
+/* Cross-fade layer — both presence stages occupy the same grid cell so they
+   morph in place. Holds either the card row or the DM panel, centered. */
+.stage {
+  grid-area: 1 / 1;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  will-change: transform;
+}
+
+/* Desktop: every card shares ONE centred grid cell and is offset/scaled purely
+   with `motion` transforms. No flex reflow, no FLIP — so the centre card holds
+   its position while the side cards fan in. */
+.stack {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  place-items: center;
+  width: 100%;
+  height: 340px;
+}
+
+.stackCard {
+  grid-area: 1 / 1;
+  width: 486px;
+  height: 282px;
+  /* Scale + translate animate about the card's centre (motion default), so the
+     centre card never drifts and the side cards grow out from behind it. */
+  will-change: transform;
+}
+
+/* ≤768px: a compact, centred card stage — NOT a horizontal scroll row. The card
+   scales fluidly to the phone (no fixed pixel width, nothing to scroll). The
+   "profile" view shows one card; "network" tucks two flanking cards behind it as
+   a tight peek. Card layers stack at one origin and are offset/scaled by motion. */
+.mobileStack {
+  position: relative;
+  /* Fluid card width — always fits the phone inside the hero's 20px gutters. */
+  --card-w: min(360px, calc(100vw - 40px));
+  width: var(--card-w);
+  /* The 486×282 card aspect ratio at the fluid width. */
+  height: calc(var(--card-w) * 282 / 486);
+  margin-inline: auto;
+  /* Both decks render so SSR == first paint (no useMediaQuery flip on
+     hydration); CSS reveals exactly one. Mobile deck hidden by default. */
+  display: none;
+}
+
+/* Each card layer fills the stack and shares one origin so they overlap in place
+   (like the desktop grid cell); motion offsets/scales each layer for the peek. */
+.mobileLayer {
+  position: absolute;
+  inset: 0;
+  width: var(--card-w);
+  height: calc(var(--card-w) * 282 / 486);
+}
+
+/* Shrinks the fixed 486×282 ProfileCard down to the fluid width. A scale
+   transform doesn't shrink the layout box, so the explicit .mobileLayer
+   dimensions above bound the cell; the top-left origin aligns the scaled art. */
+.mobileScaler {
+  width: 486px;
+  height: 282px;
+  /* Fixed fallback for engines without calc() length division; the fluid rule
+     below wins where supported (Chrome 116+ / Safari 17.4+). Dividing by 486px
+     (a length) — not 486 — yields the unitless number scale() requires. */
+  transform: scale(0.66);
+  transform: scale(calc(var(--card-w) / 486px));
+  transform-origin: top left;
+}
+
+@media (max-width: 768px) {
+  .viewport {
+    /* Reserve the tallest mobile stage (the DM panel) so swapping
+       card ↔ DM ↔ wallet never shifts the CTA below. Tuned to the rendered DM
+       panel height after the wider panel let the reply wrap shorter (~287px at
+       ≥360px). The base `align-items: center` keeps shorter stages balanced. */
+    min-height: 290px;
+  }
+
+  /* Swap decks at the phone breakpoint (matches the old JS `min-width: 769px`). */
+  .stack {
+    display: none;
+  }
+
+  .mobileStack {
+    display: block;
+  }
+}
+
+/* Very small phones (<360px): the narrower DM panel wraps its reply onto more
+   lines, so reserve a touch more to keep the CTA from shifting when DMs land. */
+@media (max-width: 359.98px) {
+  .viewport {
+    min-height: 310px;
+  }
+}

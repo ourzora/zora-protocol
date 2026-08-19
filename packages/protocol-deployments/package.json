@@ -1,6 +1,6 @@
 {
   "name": "@zoralabs/protocol-deployments",
-  "version": "0.7.5",
+  "version": "0.7.6",
   "repository": "https://github.com/ourzora/zora-protocol",
   "license": "MIT",
   "type": "module",
@@ -34,6 +34,6 @@
     "tsup": "^7.2.0",
     "tsx": "^3.13.0",
     "typescript": "^5.2.2",
-    "viem": "2.22.12"
+    "viem": "2.53.1"
   }
 }

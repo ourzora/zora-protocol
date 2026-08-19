@@ -25,26 +25,35 @@ zora explore
 zora get <address-or-name>
 
 # Check price history
-zora price-history <address-or-name>
+zora get price-history <address-or-name>
+
+# View recent trades on a coin
+zora get trades <address-or-name>
+
+# See top holders
+zora get holders <address-or-name>
 ```
 
 ## Commands
 
-All commands support `--json` for machine-readable output. Commands with live data (`explore`, `balance`, `profile`) also support `--live` (interactive, default) and `--static` (snapshot). Use `--refresh <seconds>` to set the auto-refresh interval in `--live` mode.
+All commands support `--json` for machine-readable output. Commands with live data (`explore`, `get`, `balance`, `profile`) also support `--live` (interactive, default) and `--static` (snapshot). Use `--refresh <seconds>` to set the auto-refresh interval in `--live` mode.
 
-| Command         | Description                                               | Wallet required |
-| --------------- | --------------------------------------------------------- | --------------- |
-| `setup`         | Guided first-time setup (wallet + API key + deposit info) | —               |
-| `explore`       | Browse top, new, and highest volume coins                 | No              |
-| `get`           | Look up a coin by address or name                         | No              |
-| `price-history` | Display price history for a coin                          | No              |
-| `auth`          | Configure or check API key status                         | No              |
-| `profile`       | View creator or user profiles                             | No              |
-| `buy`           | Buy a coin                                                | Yes             |
-| `sell`          | Sell a coin                                               | Yes             |
-| `balance`       | Show wallet balances (ETH, USDC, ZORA) and coin positions | Yes             |
-| `wallet`        | Show wallet address, export key, or configure wallet      | Yes             |
-| `send`          | Send tokens to another address                            | Yes             |
+| Command             | Description                                                | Wallet required |
+| ------------------- | ---------------------------------------------------------- | --------------- |
+| `setup`             | Guided first-time setup (wallet + API key + deposit info)  | —               |
+| `explore`           | Browse top, new, and highest volume coins                  | No              |
+| `get`               | Look up a coin by address or name                          | No              |
+| `get price-history` | Display price history for a coin                           | No              |
+| `get trades`        | Show recent buy/sell activity on a coin                    | No              |
+| `get holders`       | Show top holders of a coin                                 | No              |
+| `auth`              | Configure or check API key status                          | No              |
+| `agent`             | Create a headless Privy account for an agent               | No              |
+| `profile`           | View creator or user profiles                              | No              |
+| `buy`               | Buy a coin                                                 | Yes             |
+| `sell`              | Sell a coin                                                | Yes             |
+| `balance`           | Show wallet balances (ETH, USDC, ZORA) and coin positions  | Yes             |
+| `wallet`            | Show address, export key, configure, or connect an account | Yes             |
+| `send`              | Send tokens to another address                             | Yes             |
 
 Run `zora --help` or `zora <command> --help` for detailed usage.
 
@@ -63,10 +72,47 @@ The private key is stored locally at `~/.config/zora/wallet.json` with restricte
 
 ### Advanced
 
-To configure wallet or API key individually (without running the full setup flow). All commands work without an API key but may be rate-limited:
+To configure wallet or API key individually (without running the full setup flow). All commands work without an API key but may be rate-limited. An API key also provides more accurate coin valuations in `zora balance` by using the SDK's liquidity-aware pricing:
 
 - `zora wallet configure` — create or import a wallet (`--create`, `--force`)
+- `zora wallet connect` — connect an existing Zora account (see below)
 - `zora auth configure` — save an API key; `zora auth status` — check current config
+
+## Connecting an existing account
+
+Already have a Zora account from the web or mobile app? `zora wallet connect` brings it under CLI control. Paste the private key that controls it (export it from Zora's wallet settings, backed by Privy) and the CLI **auto-discovers the account's smart wallet on-chain** — the Coinbase Smart Wallet is deployed deterministically from its owner, so no address lookup is needed — verifies the key owns it, and saves both to `~/.config/zora/wallet.json`. From then on `buy`, `sell`, and `coin create` act as your real account, not the bare EOA.
+
+```bash
+zora wallet connect                       # prompts for the key, then auto-discovers
+zora wallet connect 0x<key> --yes         # non-interactive (key as argument)
+zora wallet connect --smart-wallet 0x...  # override discovery for a non-standard owner set
+zora wallet connect --force               # overwrite an already-configured wallet
+```
+
+Unlike `setup` / `wallet configure --import` (which store only the EOA), `connect` records the smart wallet too — this is the fix for "the CLI found my EOA but not my account." Overwriting a wallet that owns an agent is blocked, the same as `setup --force`.
+
+## Agents
+
+`zora agent create` stands up a complete Zora agent identity from an EOA, with no human interaction: a headless Privy account (Sign-In-With-Ethereum — no Privy dashboard, email, or OTP), a Zora profile, a smart wallet, a creator coin, and a first post. Every on-chain step is paymaster-sponsored, so the agent needs no ETH, and it authenticates with only the Privy session — never a `zora.co/settings/developer` API key.
+
+```bash
+# Full onboarding: account → profile → smart wallet → creator coin → first post
+zora agent create
+
+# Dry run: create the account, profile, and smart wallet, but simulate the coin + post
+zora agent create --dry-run
+
+# JSON output for automation
+zora agent create --json
+
+# Use a specific key without saving it, and skip steps as needed
+zora agent create --private-key 0x... --skip-post
+
+# Choose the agent's own profile at creation (all optional; otherwise autogenerated)
+zora agent create --username my-agent --bio "gm, I trade memecoins" --avatar ./pfp.png
+```
+
+The output includes the agent's profile handle, its smart wallet, **links to the new profile, creator coin, and first post**, and a **Privy access token** (a session JWT, ~1h) to send as `Authorization: Bearer <token>` for further Zora API calls. The EOA is resolved from `--private-key`, then `ZORA_PRIVATE_KEY`, then the saved CLI wallet (`~/.config/zora/wallet.json`); otherwise a new one is generated and saved — back it up, as it owns the agent. The first post's artwork is a bundled, Zora-themed greeting card (no avatar/username, so it stays appropriate permanently).
 
 ## Documentation
 

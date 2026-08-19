@@ -10,6 +10,7 @@ type PriceHistoryProps = {
   low: string;
   change: { text: string; color: "green" | "red" | undefined };
   sparklineText: string;
+  compact?: boolean;
 };
 
 const Row = ({
@@ -35,11 +36,12 @@ const PriceHistory = ({
   low,
   change,
   sparklineText,
+  compact = false,
 }: PriceHistoryProps) => (
   <Box flexDirection="column" paddingLeft={1}>
     <Box marginTop={1} flexDirection="column">
-      <Row label="Coin">{coin}</Row>
-      <Row label="Type">{coinType}</Row>
+      {!compact && <Row label="Coin">{coin}</Row>}
+      {!compact && <Row label="Type">{coinType}</Row>}
       <Row label="Interval">{interval}</Row>
       <Row label="High">{high}</Row>
       <Row label="Low">{low}</Row>

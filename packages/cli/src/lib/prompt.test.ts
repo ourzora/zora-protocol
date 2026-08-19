@@ -3,10 +3,17 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 vi.mock("@inquirer/confirm");
 vi.mock("@inquirer/select");
 vi.mock("@inquirer/password");
+vi.mock("@inquirer/input");
 
 import confirm from "@inquirer/confirm";
 import select from "@inquirer/select";
-import { confirmOrDefault, selectOrDefault, passwordOrFail } from "./prompt.js";
+import input from "@inquirer/input";
+import {
+  confirmOrDefault,
+  selectOrDefault,
+  passwordOrFail,
+  inputOrFail,
+} from "./prompt.js";
 
 describe("confirmOrDefault", () => {
   afterEach(() => vi.restoreAllMocks());
@@ -63,5 +70,25 @@ describe("passwordOrFail", () => {
     await expect(
       passwordOrFail(false, { message: "Key:" }, true),
     ).rejects.toThrow("process.exit(1)");
+  });
+});
+
+describe("inputOrFail", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("exits with error when nonInteractive is true", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    await expect(
+      inputOrFail(false, { message: "Email:" }, true),
+    ).rejects.toThrow("process.exit(1)");
+    expect(input).not.toHaveBeenCalled();
+  });
+
+  it("calls inquirer input when nonInteractive is false", async () => {
+    vi.mocked(input).mockResolvedValue("user@example.com");
+    const result = await inputOrFail(false, { message: "Email:" }, false);
+    expect(result).toBe("user@example.com");
+    expect(input).toHaveBeenCalled();
   });
 });

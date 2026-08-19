@@ -38,7 +38,7 @@ library CoinRewardsV4 {
     using SafeERC20 for IERC20;
 
     function getTradeReferral(bytes calldata hookData) internal pure returns (address) {
-        return hookData.length >= 20 ? abi.decode(hookData, (address)) : address(0);
+        return hookData.length >= 32 ? abi.decode(hookData, (address)) : address(0);
     }
 
     /// @dev Swaps collected fees through the payout path and distributes all deltas as rewards.

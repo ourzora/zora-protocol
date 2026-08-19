@@ -1,0 +1,100 @@
+/* Zora wallet screen shown in the hero while the word is "wallet".
+   Real DOM; styling mirrors the production wallet (apps/web/components/Wallet).
+   Shares the DM panel's card chrome so the two hero panels read as a set. */
+.panel {
+  display: flex;
+  flex-direction: column;
+  width: clamp(340px, 30vw, 400px);
+  max-width: 100%;
+  margin-inline: auto;
+  background: #ffffff;
+  border: 1px solid #e4e4e4;
+  border-radius: var(--agents-radius);
+  box-shadow: 0 12px 40px rgba(18, 18, 18, 0.18);
+  overflow: hidden;
+  text-align: left;
+}
+
+/* ---- Body: label · big value · action row (no header — simplified) ------- */
+.body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 26px 20px 22px;
+}
+
+.label {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.014em;
+  color: #878787;
+}
+
+.value {
+  display: inline-flex;
+  margin-top: 10px;
+  margin-bottom: 26px;
+  /* Big + dramatic for the marketing hero; tight tracking keeps the climbing
+     value (up to ~$9,000.00) from clipping the panel at any width. */
+  font-size: clamp(44px, 5.6vw, 60px);
+  /* Proportional figures (no tabular-nums) so the "$" + digits read like the
+     product's Monument Grotesk display rather than a monospaced ticker. Medium
+     (not bold) keeps the big value from reading heavy/dark during the roll. */
+  font-weight: 500;
+  line-height: 1.04;
+  letter-spacing: -0.04em;
+  color: var(--agents-ink);
+}
+
+/* ---- Action tiles -------------------------------------------------------- */
+.actions {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.actionTile {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  /* Match the prod wallet tile: 8px radius, tight icon→label gap. */
+  gap: 4px;
+  padding: 14px 6px;
+  border-radius: 8px;
+  background: #f5f5f5;
+}
+
+.actionIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: var(--agents-ink);
+}
+
+.actionIcon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.actionLabel {
+  /* Prod caption1: 13px semibold #4d4d4d. */
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.016em;
+  color: #4d4d4d;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  /* Match the DM panel's wider mobile width so the two hero panels stay a set
+     and the DM↔wallet crossfade doesn't change width. */
+  .panel {
+    width: min(440px, calc(100vw - 24px));
+  }
+}

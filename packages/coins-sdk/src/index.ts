@@ -1,6 +1,9 @@
 export {
   createCoin,
+  createCoinSmartWallet,
   createCoinCall,
+  validateCreateCoinCalls,
+  validateCreateCoinSmartWalletCalls,
   getCoinCreateFromLogs,
   CreateConstants,
 } from "./actions/createCoin";
@@ -12,17 +15,52 @@ export type {
   ContentCoinCurrency,
 } from "./actions/createCoin";
 
-export { updateCoinURI, updateCoinURICall } from "./actions/updateCoinURI";
+export {
+  updateCoinURI,
+  updateCoinURISmartWallet,
+  updateCoinURICall,
+  validateUpdateCoinURI,
+} from "./actions/updateCoinURI";
 export type { UpdateCoinURIArgs } from "./actions/updateCoinURI";
 
 export {
   updatePayoutRecipient,
+  updatePayoutRecipientSmartWallet,
   updatePayoutRecipientCall,
+  validateUpdatePayoutRecipient,
 } from "./actions/updatePayoutRecipient";
 export type { UpdatePayoutRecipientArgs } from "./actions/updatePayoutRecipient";
 
-export { tradeCoin, createTradeCall } from "./actions/tradeCoin";
+export {
+  tradeCoin,
+  tradeCoinSmartWallet,
+  createTradeCall,
+  createQuote,
+  validateTradeParameters,
+} from "./actions/tradeCoin";
 export type { TradeParameters } from "./actions/tradeCoin";
+
+// Normalized call types + user-operation adapter
+export {
+  toGenericCall,
+  toUserOperationCalls,
+  isContractCall,
+  isSendCall,
+} from "./utils/calls";
+export type {
+  GenericCall,
+  UserOperationCall,
+  ContractCall,
+  SendCall,
+} from "./utils/calls";
+
+// User Operation Utils
+export {
+  prepareUserOperation,
+  submitUserOperation,
+  CoinbaseGasError,
+} from "./utils/userOperation";
+export type { PreparedUserOperation } from "./utils/userOperation";
 
 // API Read Actions
 export * from "./api/queries";
@@ -40,7 +78,7 @@ export type * from "./api/social";
 export { setApiKey } from "./api/api-key";
 
 // Raw API helpers
-export { apiGet, apiPost, setApiBaseUrl } from "./api/api-raw";
+export { apiGet, apiPost, apiUrl, setApiBaseUrl } from "./api/api-raw";
 
 // Metadata Validation Utils
 export * from "./metadata";

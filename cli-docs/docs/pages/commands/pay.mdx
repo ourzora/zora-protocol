@@ -1,0 +1,153 @@
+# pay
+
+Pay for an [x402](https://www.x402.org)-protected resource on Base. The command operates in two mutually exclusive modes — provide exactly one of `--url` or `--accepts`. Requires a [wallet](/commands/setup). Pays from your [smart wallet](/guides/wallet-modes) when one is configured, otherwise your EOA.
+
+```bash
+zora pay --url <url> [options]
+zora pay --accepts <json> [options]
+```
+
+## Modes
+
+| Mode                   | Trigger     | What it does                                                                                                |
+| ---------------------- | ----------- | ----------------------------------------------------------------------------------------------------------- |
+| **Fetch** (pay-and-go) | `--url`     | Fetches the URL, automatically pays any `402 Payment Required` challenge, and returns the resource.         |
+| **Build** (sign-only)  | `--accepts` | Signs a payment for a 402 challenge and prints the `PAYMENT-SIGNATURE` header to attach to a retry request. |
+
+## Options
+
+| Flag                   | Description                                                                                                                               |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `--url <url>`          | Fetch a URL, automatically paying any x402 402 challenge and returning the resource (fetch mode)                                          |
+| `--accepts <json>`     | x402 `accepts` array, 402 response body, or base64 `PAYMENT-REQUIRED` header. Accepts inline JSON, `@file`, or `-` for stdin (build mode) |
+| `--method <method>`    | HTTP method for `--url` mode (default: `GET`)                                                                                             |
+| `--data <body>`        | Request body (JSON) for `--url` mode                                                                                                      |
+| `--asset <address>`    | Prefer paying with this ERC-20 asset (`0x...`)                                                                                            |
+| `--max-value <atomic>` | Maximum payment in the asset's atomic units; refuse to pay above it (e.g. `1000000` = 1 USDC)                                             |
+| `--eoa`                | Pay from the EOA instead of the smart wallet                                                                                              |
+| `--output <file>`      | Write the response body to a file (raw bytes; works for binary resources)                                                                 |
+| `--yes`                | Skip confirmation prompt                                                                                                                  |
+| `--json`               | Machine-readable JSON output                                                                                                              |
+
+:::info
+`--accepts` and `--url` cannot be used together — `--accepts` only signs a payment, while `--url` pays and fetches in one step.
+:::
+
+## Examples
+
+### Pay and fetch a protected resource
+
+```bash
+npx @zoralabs/cli pay --url https://api.example.com/premium
+```
+
+```
+ x402 request succeeded
+
+ Status       200
+ Type         application/json
+ Paid         yes (from smart-wallet)
+ Tx           0x789abc...
+
+ Response:
+
+ { "data": "..." }
+```
+
+### POST with a request body
+
+```bash
+npx @zoralabs/cli pay --url https://api.example.com/generate --method POST --data '{"prompt":"hello"}'
+```
+
+### Cap the payment amount
+
+```bash
+npx @zoralabs/cli pay --url https://api.example.com/premium --max-value 1000000
+```
+
+### Save a binary resource to a file
+
+```bash
+npx @zoralabs/cli pay --url https://api.example.com/image --output ./out.png
+```
+
+### Sign a payment without fetching (build mode)
+
+```bash
+npx @zoralabs/cli pay --accepts '<402 accepts JSON>'
+```
+
+The `--accepts` payload can also be piped in or read from a file:
+
+```bash
+# From a file
+npx @zoralabs/cli pay --accepts @challenge.json
+
+# From stdin
+curl -s https://api.example.com/premium | npx @zoralabs/cli pay --accepts -
+```
+
+```
+ Signed x402 payment
+
+ Amount       1 USDC
+ Pay to       0x...
+ Paying from  smart-wallet
+
+ Attach this header to the retry request:
+
+ PAYMENT-SIGNATURE: <signed header>
+```
+
+## JSON output
+
+### Fetch mode
+
+For a text resource the body is inlined and also written to a durable file (`savedTo`). Binary resources are referenced by path only:
+
+```json
+{
+  "action": "pay",
+  "mode": "fetch",
+  "url": "https://api.example.com/premium",
+  "status": 200,
+  "contentType": "application/json",
+  "paid": true,
+  "settlement": {
+    "success": true,
+    "transaction": "0x789abc...",
+    "network": "base",
+    "payer": "0x..."
+  },
+  "encoding": "utf8",
+  "body": { "data": "..." },
+  "savedTo": "/tmp/...",
+  "bytes": 1234
+}
+```
+
+When no payment was required, `paid` is `false` and `settlement` is `null`.
+
+### Build mode
+
+```json
+{
+  "action": "pay",
+  "mode": "build",
+  "headerName": "PAYMENT-SIGNATURE",
+  "header": "<signed header>",
+  "requirement": {
+    "scheme": "exact",
+    "network": "base",
+    "asset": "0x...",
+    "payTo": "0x...",
+    "amount": "1000000",
+    "amountFormatted": "1",
+    "symbol": "USDC",
+    "resource": "https://api.example.com/premium",
+    "description": "..."
+  },
+  "payerWallet": "smart-wallet"
+}
+```

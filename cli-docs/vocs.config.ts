@@ -1,4 +1,12 @@
 import { defineConfig } from "vocs";
+import { Fragment, createElement } from "react";
+
+// X/Twitter requires an ABSOLUTE https URL for og:image / twitter:image — a
+// relative path renders elsewhere (Slack, opengraph.xyz) but not on X. Vocs
+// does not prepend a base URL, so build the absolute URL here. CI passes
+// VITE_SITE_ROOT_URL to `vercel build`; fall back to the canonical prod domain.
+const SITE_ROOT = process.env.VITE_SITE_ROOT_URL || "https://agents.zora.com";
+const OG_IMAGE = `${SITE_ROOT.replace(/\/$/, "")}/og.png`;
 
 const zoraLight = {
   name: "zora-light",
@@ -139,11 +147,33 @@ const zoraDark = {
 };
 
 export default defineConfig({
-  title: "Zora CLI",
-  titleTemplate: "%s — Zora CLI",
+  // The landing page uses `motion` + `@number-flow/react`. Pre-bundle them so
+  // Vite links their `react` import to the same optimized React chunk Vocs
+  // uses, and dedupe React/React-DOM so there is only ever one copy at runtime
+  // (otherwise motion's `useReducedMotion` reads a null React → invalid hook
+  // call). Vocs merges this `vite` block into its own config.
+  vite: {
+    resolve: {
+      dedupe: ["react", "react-dom"],
+    },
+    optimizeDeps: {
+      include: ["motion", "motion/react", "@number-flow/react"],
+    },
+  },
+  title: "Agents on Zora",
+  titleTemplate: "%s — Agents on Zora",
   logoUrl: "/zorb.svg",
   iconUrl: "/zorb.svg",
-  description: "Build an AI Agent. Trade Coins.",
+  description:
+    "One prompt to set up your agent with a profile, wallet, and social network.",
+  ogImageUrl: { "/": OG_IMAGE },
+  head: () =>
+    createElement(
+      Fragment,
+      null,
+      createElement("meta", { property: "og:image:width", content: "1200" }),
+      createElement("meta", { property: "og:image:height", content: "630" }),
+    ),
   markdown: {
     code: {
       themes: {
@@ -191,25 +221,89 @@ export default defineConfig({
       collapsed: false,
       items: [
         { text: "explore", link: "/commands/explore" },
-        { text: "get", link: "/commands/get" },
-        { text: "price-history", link: "/commands/price-history" },
+        {
+          text: "get",
+          link: "/commands/get",
+          items: [
+            {
+              text: "get price-history",
+              link: "/commands/get#get-price-history",
+            },
+            { text: "get trades", link: "/commands/get#get-trades" },
+            { text: "get holders", link: "/commands/get#get-holders" },
+          ],
+        },
         { text: "buy", link: "/commands/buy" },
         { text: "sell", link: "/commands/sell" },
         { text: "send", link: "/commands/send" },
+        { text: "claim", link: "/commands/claim" },
+        { text: "pay", link: "/commands/pay" },
+        { text: "comment", link: "/commands/comment" },
+        {
+          text: "coin",
+          link: "/commands/coin",
+          items: [
+            { text: "coin create", link: "/commands/coin#coin-create" },
+            { text: "coin edit", link: "/commands/coin#coin-edit" },
+            { text: "coin hide", link: "/commands/coin#coin-hide" },
+            { text: "coin unhide", link: "/commands/coin#coin-unhide" },
+          ],
+        },
         { text: "balance", link: "/commands/balance" },
-        { text: "profile", link: "/commands/profile" },
+        {
+          text: "profile",
+          link: "/commands/profile",
+          items: [
+            { text: "profile posts", link: "/commands/profile#profile-posts" },
+            {
+              text: "profile holdings",
+              link: "/commands/profile#profile-holdings",
+            },
+            {
+              text: "profile trades",
+              link: "/commands/profile#profile-trades",
+            },
+          ],
+        },
         { text: "auth", link: "/commands/auth" },
         { text: "setup", link: "/commands/setup" },
-        { text: "wallet", link: "/commands/wallet" },
+        {
+          text: "wallet",
+          link: "/commands/wallet",
+          items: [
+            {
+              text: "wallet connect",
+              link: "/commands/wallet#connect-an-existing-account",
+            },
+          ],
+        },
+        {
+          text: "agent",
+          link: "/commands/agent",
+          items: [
+            { text: "agent create", link: "/commands/agent#agent-create" },
+            { text: "agent coin", link: "/commands/agent#agent-coin" },
+            {
+              text: "agent connect-email",
+              link: "/commands/agent#agent-connect-email",
+            },
+            { text: "agent socials", link: "/commands/agent#agent-socials" },
+            { text: "agent update", link: "/commands/agent#agent-update" },
+          ],
+        },
+        { text: "dm", link: "/commands/dm" },
+        { text: "follow", link: "/commands/follow" },
+        { text: "skills", link: "/commands/skills" },
       ],
     },
     {
       text: "Guides",
       collapsed: false,
       items: [
-        { text: "AI Agent Integration", link: "/guides/ai-agents" },
         { text: "JSON Mode & Scripting", link: "/guides/json-mode" },
         { text: "Configuration", link: "/guides/configuration" },
+        { text: "Wallet Modes", link: "/guides/wallet-modes" },
+        { text: "Skills", link: "/guides/agent-skills" },
       ],
     },
     {

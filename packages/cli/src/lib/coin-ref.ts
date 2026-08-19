@@ -11,6 +11,16 @@ export type CoinRef =
 
 const TYPE_KEYWORDS = new Set<string>(["creator-coin", "trend"]);
 
+/**
+ * Whether a positional arg is a coin-type prefix (`creator-coin` / `trend`),
+ * meaning the coin reference spans two args (prefix + name). Lets callers that
+ * accept trailing args (e.g. `comment <coin> <text>`) figure out how many
+ * leading args the coin reference consumes.
+ */
+export function isCoinTypeKeyword(arg: string | undefined): boolean {
+  return arg !== undefined && TYPE_KEYWORDS.has(arg);
+}
+
 export type ParsedCoinArgs =
   | { kind: "typed"; type: CoinType; identifier: string }
   | { kind: "address"; address: string }
@@ -136,6 +146,7 @@ export interface ResolvedCoin {
   marketCap: string;
   marketCapDelta24h: string;
   volume24h: string;
+  totalSupply: string;
   uniqueHolders: number;
   createdAt: string | undefined;
   creatorAddress: string | undefined;
@@ -166,6 +177,7 @@ function coinFromToken(token: any): ResolvedCoin {
     marketCap: token.marketCap ?? "0",
     marketCapDelta24h: token.marketCapDelta24h ?? "0",
     volume24h: token.volume24h ?? "0",
+    totalSupply: token.totalSupply ?? "0",
     uniqueHolders: token.uniqueHolders ?? 0,
     createdAt: token.createdAt,
     creatorAddress: token.creatorAddress,

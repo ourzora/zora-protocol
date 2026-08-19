@@ -13,6 +13,15 @@ zora auth [command]
 | `auth configure` | Save an API key                     |
 | `auth status`    | Check current authentication status |
 
+## Options
+
+`auth configure` accepts `--yes` to skip the interactive prompt. Both subcommands accept the global `--json` flag.
+
+| Flag     | Subcommand       | Description                                      |
+| -------- | ---------------- | ------------------------------------------------ |
+| `--yes`  | `auth configure` | Skip the interactive prompt and execute directly |
+| `--json` | both             | Machine-readable JSON output                     |
+
 ## Get an API Key
 
 Get a key at [zora.co/settings/developer](https://zora.co/settings/developer). The key is stored at `~/.config/zora/config.json` with restricted permissions.
@@ -26,9 +35,26 @@ npx @zoralabs/cli auth configure
 ```
 
 ```
- Enter your Zora API key: ********
+ Get your API key from: https://zora.co/settings/developer
+
+ Paste your API key: ********
 
  API key saved to ~/.config/zora/config.json
+```
+
+With `--json`, a successful save returns:
+
+```json
+{ "saved": true, "path": "~/.config/zora/config.json" }
+```
+
+If `ZORA_API_KEY` is set in the environment, `configure` reports that the key is set via the environment variable and does not write to the config file:
+
+```json
+{
+  "status": "env_override",
+  "message": "API key is set via ZORA_API_KEY environment variable."
+}
 ```
 
 ### Check authentication status
@@ -68,7 +94,7 @@ When no key is configured:
 
 ## Environment Variable
 
-The `ZORA_API_KEY` environment variable takes precedence over the config file:
+The `ZORA_API_KEY` environment variable takes precedence over the config file. When the key comes from the environment, `source` is reported as `env (ZORA_API_KEY)`:
 
 ```bash
 export ZORA_API_KEY=your-key-here
@@ -79,6 +105,6 @@ npx @zoralabs/cli auth status --json
 {
   "authenticated": true,
   "key": "your-key...here",
-  "source": "ZORA_API_KEY"
+  "source": "env (ZORA_API_KEY)"
 }
 ```

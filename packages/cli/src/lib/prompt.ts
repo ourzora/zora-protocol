@@ -1,6 +1,7 @@
 import confirm from "@inquirer/confirm";
 import select from "@inquirer/select";
 import password from "@inquirer/password";
+import input from "@inquirer/input";
 import { outputErrorAndExit } from "./output.js";
 
 type ConfirmOpts = {
@@ -58,4 +59,28 @@ const passwordOrSkip = async (
   return password(opts);
 };
 
-export { confirmOrDefault, selectOrDefault, passwordOrFail, passwordOrSkip };
+type InputOpts = {
+  message: string;
+};
+
+const inputOrFail = async (
+  json: boolean,
+  opts: InputOpts,
+  nonInteractive: boolean,
+): Promise<string> => {
+  if (nonInteractive) {
+    outputErrorAndExit(
+      json,
+      "This command requires interactive input. Remove --yes to proceed.",
+    );
+  }
+  return input(opts);
+};
+
+export {
+  confirmOrDefault,
+  selectOrDefault,
+  passwordOrFail,
+  passwordOrSkip,
+  inputOrFail,
+};

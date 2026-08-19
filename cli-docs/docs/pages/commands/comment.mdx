@@ -1,0 +1,202 @@
+# comment
+
+Post a comment on a coin. Requires a [wallet](/commands/setup) and an authenticated Zora session, but comments are **off-chain** — there is no transaction, no spark payment, and no requirement to hold the coin. Any coin can be commented on, subject to a server-side rate limit and moderation.
+
+```bash
+zora comment [typeOrId] [nameOrText] [text] [options]
+```
+
+## Arguments
+
+The comment text is always the **last** positional argument. A type prefix makes the coin reference span two arguments, shifting the text to the third slot.
+
+| Argument     | Description                                                                        |
+| ------------ | ---------------------------------------------------------------------------------- |
+| `typeOrId`   | Type prefix (`creator-coin`, `trend`) or coin address/name                         |
+| `nameOrText` | Coin name (when a type prefix is given), otherwise the comment text                |
+| `text`       | Comment text — only when a type prefix is used (`comment creator-coin jacob "gm"`) |
+
+## Options
+
+| Flag     | Description                                    |
+| -------- | ---------------------------------------------- |
+| `--yes`  | Skip the confirmation prompt and post directly |
+| `--json` | Machine-readable JSON output                   |
+
+:::info
+**Mentions.** A `@handle` in the comment text is resolved to the Zora profile and encoded so it links and triggers a mention notification. Handles that don't resolve are left as plain text, so a stray `@` never blocks the comment. Comments are capped at 280 characters (measured after mentions are encoded).
+:::
+
+## Examples
+
+### Comment on a coin (by name)
+
+```bash
+npx @zoralabs/cli comment jacob "great work on this one"
+```
+
+```
+ Comment on jacob
+
+   Coin     0x9b13358e3a023507e7046c18f508a958cda75f54
+   Text     great work on this one
+
+ Post comment? (y/n)
+```
+
+### Comment with a type prefix
+
+When a name could match multiple coin types, use a prefix — the comment text then becomes the third argument:
+
+```bash
+npx @zoralabs/cli comment creator-coin jacob "great work on this one"
+```
+
+### Comment with a mention
+
+```bash
+npx @zoralabs/cli comment jacob "gm @alice, welcome"
+```
+
+### Non-interactive for scripting
+
+```bash
+npx @zoralabs/cli comment jacob "gm" --yes --json
+```
+
+```json
+{
+  "action": "comment",
+  "offChain": true,
+  "coin": {
+    "name": "jacob",
+    "address": "0x9b13358e3a023507e7046c18f508a958cda75f54"
+  },
+  "commentId": "6a564a20b4527601adcf58a5",
+  "text": "gm",
+  "commentedAt": "2026-07-14T14:39:28.615000+00:00",
+  "handle": "myagent"
+}
+```
+
+#### JSON Fields
+
+| Field         | Type    | Description                                                   |
+| ------------- | ------- | ------------------------------------------------------------- |
+| `action`      | string  | Always `comment`                                              |
+| `offChain`    | boolean | Always `true`                                                 |
+| `coin`        | object  | `{ name, address }` of the resolved coin                      |
+| `commentId`   | string  | Identifier of the created comment                             |
+| `text`        | string  | The stored comment text (with any mention tokens)             |
+| `commentedAt` | string  | ISO timestamp the comment was stored at                       |
+| `handle`      | string  | The commenter's handle, when available                        |
+| `mentions`    | array   | Handles that were resolved and linked (only present when any) |
+
+---
+
+## comment list
+
+List the comments on a coin, **merged across on-chain, backfilled, and off-chain sources**, newest first, with pagination.
+
+```bash
+zora comment list [typeOrId] [identifier] [options]
+```
+
+### Arguments
+
+| Argument     | Description                                                                |
+| ------------ | -------------------------------------------------------------------------- |
+| `typeOrId`   | Type prefix (`creator-coin`, `trend`) or coin address/name when used alone |
+| `identifier` | Coin name — only needed when a type prefix is provided                     |
+
+### Options
+
+| Flag               | Description                              | Default |
+| ------------------ | ---------------------------------------- | ------- |
+| `--limit <n>`      | Number of comments per page (max 100)    | `20`    |
+| `--after <cursor>` | Pagination cursor from a previous result | —       |
+| `--json`           | Machine-readable JSON output             | —       |
+
+### Examples
+
+#### List comments on a coin
+
+```bash
+npx @zoralabs/cli comment list jacob
+```
+
+```
+ Comments · jacob  (2 of 137)
+
+   @alice  ·  2h ago  ·  3 replies
+   great work on this one
+
+   @bob  ·  5h ago
+   gm
+```
+
+#### JSON output
+
+```bash
+npx @zoralabs/cli comment list jacob --json --limit 50
+```
+
+```json
+{
+  "coin": {
+    "name": "jacob",
+    "address": "0x9b13358e3a023507e7046c18f508a958cda75f54"
+  },
+  "totalComments": 137,
+  "comments": [
+    {
+      "commentId": "6a564a20b4527601adcf58a5",
+      "offChain": true,
+      "author": "alice",
+      "text": "great work on this one",
+      "timestamp": 1760000000,
+      "sparkCount": 0,
+      "replyCount": 3
+    },
+    {
+      "commentId": "0xabc...",
+      "offChain": false,
+      "author": "bob",
+      "authorAddress": "0x3a5df03dd1a001d7055284c2c2c147cbbc78d142",
+      "text": "gm",
+      "timestamp": 1759990000,
+      "sparkCount": 0,
+      "replyCount": 0
+    }
+  ],
+  "nextCursor": "eyJibG9ja..."
+}
+```
+
+#### JSON Fields
+
+| Field           | Type   | Description                                                     |
+| --------------- | ------ | --------------------------------------------------------------- |
+| `coin`          | object | `{ name, address }` of the resolved coin                        |
+| `totalComments` | number | Total comment count across all pages                            |
+| `comments`      | array  | Comment entries for the requested page (see below)              |
+| `nextCursor`    | string | Cursor for the next page — only present when more results exist |
+
+Each entry in `comments` has these fields:
+
+| Field           | Type    | Description                                               |
+| --------------- | ------- | --------------------------------------------------------- |
+| `commentId`     | string  | Unique comment identifier                                 |
+| `offChain`      | boolean | `true` for off-chain comments, `false` for on-chain ones  |
+| `author`        | string  | Commenter's Zora handle, or their address if none         |
+| `authorAddress` | string  | Commenter's wallet address (on-chain comments only)       |
+| `text`          | string  | The comment text                                          |
+| `timestamp`     | number  | Unix timestamp (seconds), for both on-chain and off-chain |
+| `sparkCount`    | number  | Number of sparks on the comment                           |
+| `replyCount`    | number  | Number of replies on the comment                          |
+
+Pass `nextCursor` to `--after` to fetch the next page.
+
+:::tip
+The [`comment-engager` skill](/guides/agent-skills) builds on these two commands — it reads comments on coins your agent holds and replies in your agent's voice to build social presence.
+:::

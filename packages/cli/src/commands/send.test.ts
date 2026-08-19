@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { type Address, getAddress, parseEther } from "viem";
+import { type Address, getAddress, parseEther, PrivateKeyAccount } from "viem";
 import { createProgram } from "../test/create-program.js";
 
 vi.mock("@inquirer/confirm");
 vi.mock("../lib/config.js", () => ({
   getApiKey: vi.fn(),
+  getBudget: vi.fn(),
+  saveBudget: vi.fn(),
 }));
 vi.mock("../lib/wallet.js");
 
@@ -14,8 +16,8 @@ vi.mock("../lib/wallet-balances.js");
 
 import confirm from "@inquirer/confirm";
 import { setApiKey, getCoin, getProfile, getTrend } from "@zoralabs/coins-sdk";
-import { getApiKey } from "../lib/config.js";
-import { createClients, resolveAccount } from "../lib/wallet.js";
+import { getApiKey, getBudget, saveBudget } from "../lib/config.js";
+import { createClients, resolveAccounts } from "../lib/wallet.js";
 import { track } from "../lib/analytics.js";
 import { fetchTokenPriceUsd } from "../lib/wallet-balances.js";
 import { sendCommand } from "./send.js";
@@ -65,9 +67,16 @@ describe("send command", () => {
     vi.mocked(getTrend).mockResolvedValue({
       data: { trendCoin: null },
     } as any);
-    vi.mocked(resolveAccount).mockReturnValue({
-      address: ACCOUNT_ADDRESS,
-    } as ReturnType<typeof resolveAccount>);
+    // Default: no profile resolves (address-path reverse lookups return no name).
+    vi.mocked(getProfile).mockResolvedValue({
+      data: { profile: null },
+    } as any);
+    vi.mocked(resolveAccounts).mockResolvedValue({
+      privateKeyAccount: {
+        address: ACCOUNT_ADDRESS,
+      } as PrivateKeyAccount,
+      smartWalletAccount: undefined,
+    } as Awaited<ReturnType<typeof resolveAccounts>>);
     vi.mocked(createClients).mockReturnValue({
       publicClient,
       walletClient,
@@ -96,12 +105,12 @@ describe("send command", () => {
       await expect(runSend(["eth", "--amount", "0.1"])).rejects.toThrow();
     });
 
-    it("exits with error when --to is not a valid address", async () => {
+    it("exits with error when --to cannot be resolved to a profile or address", async () => {
       await expect(
-        runSend(["eth", "--to", "not-an-address", "--amount", "0.1"]),
+        runSend(["eth", "--to", "not-a-known-profile", "--amount", "0.1"]),
       ).rejects.toThrow("process.exit(1)");
       expect(errorSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Invalid recipient address"),
+        expect.stringContaining("No Zora profile or wallet found"),
       );
     });
 
@@ -121,6 +130,105 @@ describe("send command", () => {
       expect(errorSpy).toHaveBeenCalledWith(
         expect.stringContaining("Only one amount flag"),
       );
+    });
+  });
+
+  // --- Recipient resolution ---
+
+  describe("recipient resolution", () => {
+    it("resolves a profile name to its public wallet address", async () => {
+      vi.mocked(getProfile).mockResolvedValue({
+        data: {
+          profile: {
+            handle: "vitalik",
+            displayName: "Vitalik",
+            publicWallet: { walletAddress: RECIPIENT_ADDRESS },
+          },
+        },
+      } as any);
+
+      await runSend(["eth", "--to", "vitalik", "--amount", "0.1", "--yes"]);
+
+      expect(getProfile).toHaveBeenCalledWith({ identifier: "vitalik" });
+      // The ETH transfer goes to the profile's resolved wallet address.
+      expect(walletClient.sendTransaction).toHaveBeenCalledWith(
+        expect.objectContaining({ to: RECIPIENT_ADDRESS }),
+      );
+    });
+
+    it("shows the profile name in the preview when --to is a profile", async () => {
+      vi.mocked(getProfile).mockResolvedValue({
+        data: {
+          profile: {
+            handle: "vitalik",
+            displayName: "Vitalik",
+            publicWallet: { walletAddress: RECIPIENT_ADDRESS },
+          },
+        },
+      } as any);
+      vi.mocked(confirm).mockResolvedValue(false);
+
+      await expect(
+        runSend(["eth", "--to", "vitalik", "--amount", "0.1"]),
+      ).rejects.toThrow("process.exit(0)");
+
+      const preview = logSpy.mock.calls.map((c) => c[0]).join("\n");
+      expect(preview).toContain(RECIPIENT_ADDRESS);
+      expect(preview).toContain("@vitalik");
+    });
+
+    it("reverse-resolves a profile name for an address recipient in the preview", async () => {
+      vi.mocked(getProfile).mockResolvedValue({
+        data: {
+          profile: {
+            handle: "vitalik",
+            displayName: "Vitalik",
+            publicWallet: { walletAddress: RECIPIENT_ADDRESS },
+          },
+        },
+      } as any);
+      vi.mocked(confirm).mockResolvedValue(false);
+
+      await expect(
+        runSend(["eth", "--to", RECIPIENT_ADDRESS, "--amount", "0.1"]),
+      ).rejects.toThrow("process.exit(0)");
+
+      expect(getProfile).toHaveBeenCalledWith({
+        identifier: RECIPIENT_ADDRESS,
+      });
+      const preview = logSpy.mock.calls.map((c) => c[0]).join("\n");
+      expect(preview).toContain("@vitalik");
+    });
+
+    it("does not show a profile line when an address has no profile", async () => {
+      // Default getProfile mock returns { profile: null }.
+      vi.mocked(confirm).mockResolvedValue(false);
+
+      await expect(
+        runSend(["eth", "--to", RECIPIENT_ADDRESS, "--amount", "0.1"]),
+      ).rejects.toThrow("process.exit(0)");
+
+      const preview = logSpy.mock.calls.map((c) => c[0]).join("\n");
+      expect(preview).not.toContain("Profile ");
+    });
+
+    it("ignores a truncated-address placeholder handle as a profile name", async () => {
+      vi.mocked(getProfile).mockResolvedValue({
+        data: {
+          profile: {
+            handle: "0x1234…5678",
+            publicWallet: { walletAddress: RECIPIENT_ADDRESS },
+          },
+        },
+      } as any);
+      vi.mocked(confirm).mockResolvedValue(false);
+
+      await expect(
+        runSend(["eth", "--to", RECIPIENT_ADDRESS, "--amount", "0.1"]),
+      ).rejects.toThrow("process.exit(0)");
+
+      const preview = logSpy.mock.calls.map((c) => c[0]).join("\n");
+      expect(preview).not.toContain("Profile ");
     });
   });
 
@@ -737,6 +845,211 @@ describe("send command", () => {
       expect(errorSpy).toHaveBeenCalledWith(
         expect.stringContaining("No USDC balance"),
       );
+    });
+  });
+
+  describe("budget enforcement", () => {
+    beforeEach(() => {
+      vi.mocked(getBudget).mockReturnValue(undefined);
+    });
+
+    describe("ETH send", () => {
+      it("blocks an ETH send when spend exceeds budget cap", async () => {
+        vi.mocked(getBudget).mockReturnValue({
+          version: 1,
+          limitUsd: 100,
+          period: "lifetime",
+          optedOut: false,
+          windowStart: "2026-06-01T00:00:00.000Z",
+          ledger: [{ usd: 80, skill: "dca", at: "2026-06-02T00:00:00.000Z" }],
+        });
+        // fetchTokenPriceUsd returns 2500, so 0.1 ETH = $250 which exceeds remaining $20
+        await expect(
+          runSend(["eth", "--to", RECIPIENT_ADDRESS, "--amount", "0.1", "--yes"]),
+        ).rejects.toThrow("process.exit(1)");
+
+        expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("exceed"));
+        expect(walletClient.sendTransaction).not.toHaveBeenCalled();
+        expect(track).toHaveBeenCalledWith(
+          "cli_send",
+          expect.objectContaining({ action: "budget_blocked" }),
+        );
+      });
+
+      it("allows an ETH send when spend is under budget cap", async () => {
+        vi.mocked(getBudget).mockReturnValue({
+          version: 1,
+          limitUsd: 500,
+          period: "weekly",
+          optedOut: false,
+          windowStart: new Date().toISOString(),
+          ledger: [],
+        });
+
+        await runSend([
+          "eth",
+          "--to",
+          RECIPIENT_ADDRESS,
+          "--amount",
+          "0.1",
+          "--yes",
+        ]);
+
+        expect(walletClient.sendTransaction).toHaveBeenCalled();
+      });
+
+      it("records spend in ledger after successful ETH send", async () => {
+        vi.mocked(getBudget).mockReturnValue({
+          version: 1,
+          limitUsd: 500,
+          period: "weekly",
+          optedOut: false,
+          windowStart: new Date().toISOString(),
+          ledger: [],
+        });
+
+        await runSend([
+          "eth",
+          "--to",
+          RECIPIENT_ADDRESS,
+          "--amount",
+          "0.1",
+          "--yes",
+        ]);
+
+        expect(saveBudget).toHaveBeenCalledWith(
+          expect.objectContaining({
+            ledger: expect.arrayContaining([
+              expect.objectContaining({
+                usd: 250, // 0.1 ETH * $2500
+                skill: expect.stringContaining("send ETH"),
+              }),
+            ]),
+          }),
+        );
+      });
+
+      it("does not enforce budget when no budget is configured", async () => {
+        vi.mocked(getBudget).mockReturnValue(undefined);
+
+        await runSend([
+          "eth",
+          "--to",
+          RECIPIENT_ADDRESS,
+          "--amount",
+          "0.1",
+          "--yes",
+        ]);
+
+        expect(walletClient.sendTransaction).toHaveBeenCalled();
+        expect(saveBudget).not.toHaveBeenCalled();
+      });
+
+      it("does not enforce budget when opted out", async () => {
+        vi.mocked(getBudget).mockReturnValue({
+          version: 1,
+          limitUsd: null,
+          period: "weekly",
+          optedOut: true,
+          windowStart: new Date().toISOString(),
+          ledger: [],
+        });
+
+        await runSend([
+          "eth",
+          "--to",
+          RECIPIENT_ADDRESS,
+          "--amount",
+          "0.1",
+          "--yes",
+        ]);
+
+        expect(walletClient.sendTransaction).toHaveBeenCalled();
+        expect(saveBudget).not.toHaveBeenCalled();
+      });
+    });
+
+    describe("ERC-20 send", () => {
+      beforeEach(() => {
+        vi.mocked(getCoin).mockResolvedValue({
+          data: {
+            zora20Token: {
+              name: "Test Coin",
+              address: COIN_ADDRESS,
+              coinType: "CREATOR",
+              marketCap: "5000000",
+            },
+          },
+        } as any);
+
+        publicClient.readContract.mockImplementation(
+          ({ functionName }: { functionName: string }) => {
+            if (functionName === "balanceOf") return 1000000000000000000n;
+            if (functionName === "decimals") return 18;
+            if (functionName === "symbol") return "TEST";
+            return 0n;
+          },
+        );
+      });
+
+      it("blocks an ERC-20 send when spend exceeds budget cap", async () => {
+        vi.mocked(getBudget).mockReturnValue({
+          version: 1,
+          limitUsd: 100,
+          period: "lifetime",
+          optedOut: false,
+          windowStart: "2026-06-01T00:00:00.000Z",
+          ledger: [{ usd: 95, skill: "dca", at: "2026-06-02T00:00:00.000Z" }],
+        });
+        // Token price from fetchTokenPriceUsd = $2500, 0.5 tokens = $1250 > remaining $5
+        await expect(
+          runSend([
+            COIN_ADDRESS,
+            "--to",
+            RECIPIENT_ADDRESS,
+            "--amount",
+            "0.5",
+            "--yes",
+          ]),
+        ).rejects.toThrow("process.exit(1)");
+
+        expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("exceed"));
+        expect(walletClient.writeContract).not.toHaveBeenCalled();
+        expect(track).toHaveBeenCalledWith(
+          "cli_send",
+          expect.objectContaining({ action: "budget_blocked" }),
+        );
+      });
+
+      it("records spend in ledger after successful ERC-20 send", async () => {
+        vi.mocked(getBudget).mockReturnValue({
+          version: 1,
+          limitUsd: 5000,
+          period: "weekly",
+          optedOut: false,
+          windowStart: new Date().toISOString(),
+          ledger: [],
+        });
+
+        await runSend([
+          COIN_ADDRESS,
+          "--to",
+          RECIPIENT_ADDRESS,
+          "--amount",
+          "0.5",
+          "--yes",
+        ]);
+
+        expect(saveBudget).toHaveBeenCalledWith(
+          expect.objectContaining({
+            ledger: expect.arrayContaining([
+              expect.objectContaining({
+                skill: expect.stringContaining("send TEST"),
+              }),
+            ]),
+          }),
+        );
+      });
     });
   });
 });

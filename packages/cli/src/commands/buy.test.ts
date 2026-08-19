@@ -1,14 +1,17 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   encodeAbiParameters,
   encodeEventTopics,
   erc20Abi,
+  PrivateKeyAccount,
   type Address,
 } from "viem";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@inquirer/confirm");
 vi.mock("../lib/config.js", () => ({
   getApiKey: vi.fn(),
+  getBudget: vi.fn(),
+  saveBudget: vi.fn(),
 }));
 vi.mock("../lib/wallet.js");
 
@@ -19,7 +22,7 @@ vi.mock("../lib/analytics.js");
 
 import confirm from "@inquirer/confirm";
 import {
-  createTradeCall,
+  createQuote,
   getCoin,
   getProfile,
   getTrend,
@@ -27,11 +30,11 @@ import {
   tradeCoin,
 } from "@zoralabs/coins-sdk";
 import { track } from "../lib/analytics.js";
-import { getApiKey } from "../lib/config.js";
-import { createClients, resolveAccount } from "../lib/wallet.js";
+import { getApiKey, getBudget, saveBudget } from "../lib/config.js";
 import { fetchTokenPriceUsd } from "../lib/wallet-balances.js";
-import { buyCommand } from "./buy.js";
+import { createClients, resolveAccounts } from "../lib/wallet.js";
 import { createProgram } from "../test/create-program.js";
+import { buyCommand } from "./buy.js";
 
 const COIN_ADDRESS = "0x1234567890abcdef1234567890abcdef12345678" as Address;
 const ACCOUNT_ADDRESS = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045" as Address;
@@ -84,9 +87,12 @@ describe("buy command", () => {
     });
 
     vi.mocked(getApiKey).mockReturnValue("test-api-key");
-    vi.mocked(resolveAccount).mockReturnValue({
-      address: ACCOUNT_ADDRESS,
-    } as ReturnType<typeof resolveAccount>);
+    vi.mocked(resolveAccounts).mockResolvedValue({
+      privateKeyAccount: {
+        address: ACCOUNT_ADDRESS,
+      } as PrivateKeyAccount,
+      smartWalletAccount: undefined,
+    } as Awaited<ReturnType<typeof resolveAccounts>>);
     vi.mocked(createClients).mockReturnValue({
       publicClient,
       walletClient,
@@ -105,11 +111,11 @@ describe("buy command", () => {
     vi.mocked(getTrend).mockResolvedValue({
       data: { trendCoin: null },
     } as Awaited<ReturnType<typeof getTrend>>);
-    vi.mocked(createTradeCall).mockResolvedValue({
+    vi.mocked(createQuote).mockResolvedValue({
       quote: {
         amountOut: "2000000000000000000",
       },
-    } as Awaited<ReturnType<typeof createTradeCall>>);
+    } as Awaited<ReturnType<typeof createQuote>>);
     vi.mocked(tradeCoin).mockResolvedValue({
       transactionHash:
         "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -183,7 +189,7 @@ describe("buy command", () => {
     await runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes", "--json"]);
 
     expect(setApiKey).toHaveBeenCalledWith("test-api-key");
-    expect(createTradeCall).toHaveBeenCalledWith(
+    expect(createQuote).toHaveBeenCalledWith(
       expect.objectContaining({
         amountIn: 100000000000000000n,
         slippage: 0.01,
@@ -225,7 +231,7 @@ describe("buy command", () => {
 
     await runBuy([COIN_ADDRESS, "--all", "--yes"]);
 
-    expect(createTradeCall).toHaveBeenCalledWith(
+    expect(createQuote).toHaveBeenCalledWith(
       expect.objectContaining({
         amountIn: 999990000000000000n,
       }),
@@ -237,7 +243,7 @@ describe("buy command", () => {
 
     await runBuy([COIN_ADDRESS, "--percent", "100", "--yes"]);
 
-    expect(createTradeCall).toHaveBeenCalledWith(
+    expect(createQuote).toHaveBeenCalledWith(
       expect.objectContaining({
         amountIn: 999990000000000000n,
       }),
@@ -391,9 +397,9 @@ describe("buy command", () => {
   });
 
   it("exits when quote returns zero output", async () => {
-    vi.mocked(createTradeCall).mockResolvedValue({
+    vi.mocked(createQuote).mockResolvedValue({
       quote: { amountOut: "0" },
-    } as Awaited<ReturnType<typeof createTradeCall>>);
+    } as Awaited<ReturnType<typeof createQuote>>);
 
     await expect(
       runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes"]),
@@ -403,8 +409,8 @@ describe("buy command", () => {
     );
   });
 
-  it("exits when createTradeCall throws", async () => {
-    vi.mocked(createTradeCall).mockRejectedValue(new Error("quote error"));
+  it("exits when createQuote throws", async () => {
+    vi.mocked(createQuote).mockRejectedValue(new Error("quote error"));
 
     await expect(
       runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes"]),
@@ -466,7 +472,7 @@ describe("buy command", () => {
 
     await runBuy([COIN_ADDRESS, "--percent", "50", "--yes"]);
 
-    expect(createTradeCall).toHaveBeenCalledWith(
+    expect(createQuote).toHaveBeenCalledWith(
       expect.objectContaining({
         amountIn: 4999995000000000000n, // 50% of spendable balance (10 ETH - 0.00001 ETH gas reserve)
       }),
@@ -501,7 +507,7 @@ describe("buy command", () => {
       await runBuy([COIN_ADDRESS, "--usd", "25", "--yes"]);
 
       // $25 / $2500 per ETH = 0.01 ETH = 10000000000000000 wei
-      expect(createTradeCall).toHaveBeenCalledWith(
+      expect(createQuote).toHaveBeenCalledWith(
         expect.objectContaining({
           amountIn: 10000000000000000n,
           sell: { type: "eth" },
@@ -514,7 +520,7 @@ describe("buy command", () => {
       await runBuy([COIN_ADDRESS, "--usd", "10", "--token", "usdc", "--yes"]);
 
       // $10 / $1 per USDC = 10 USDC = 10000000 (6 decimals)
-      expect(createTradeCall).toHaveBeenCalledWith(
+      expect(createQuote).toHaveBeenCalledWith(
         expect.objectContaining({
           amountIn: 10000000n,
           sell: {
@@ -559,7 +565,7 @@ describe("buy command", () => {
     it("defaults to eth", async () => {
       await runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes"]);
 
-      expect(createTradeCall).toHaveBeenCalledWith(
+      expect(createQuote).toHaveBeenCalledWith(
         expect.objectContaining({
           sell: { type: "eth" },
         }),
@@ -569,7 +575,7 @@ describe("buy command", () => {
     it("uses USDC trade parameters with --token usdc", async () => {
       await runBuy([COIN_ADDRESS, "--usd", "5", "--token", "usdc", "--yes"]);
 
-      expect(createTradeCall).toHaveBeenCalledWith(
+      expect(createQuote).toHaveBeenCalledWith(
         expect.objectContaining({
           sell: {
             type: "erc20",
@@ -643,9 +649,7 @@ describe("buy command", () => {
 
     it("prints error details when quote throws", async () => {
       publicClient.getBalance.mockResolvedValue(10n ** 18n);
-      vi.mocked(createTradeCall).mockRejectedValue(
-        new Error("server exploded"),
-      );
+      vi.mocked(createQuote).mockRejectedValue(new Error("server exploded"));
 
       await expect(
         runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes", "--debug"]),
@@ -674,7 +678,7 @@ describe("buy command", () => {
 
   it("shows suggestion when quote fails", async () => {
     publicClient.getBalance.mockResolvedValue(10n ** 18n);
-    vi.mocked(createTradeCall).mockRejectedValue(new Error("bad request"));
+    vi.mocked(createQuote).mockRejectedValue(new Error("bad request"));
 
     await expect(
       runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes"]),
@@ -690,7 +694,7 @@ describe("buy command", () => {
       await runBuy([COIN_ADDRESS, "--eth", "0.01", "--token", "usdc", "--yes"]);
 
       // 0.01 USDC = 10000 (6 decimals), NOT 10000000000000000 (18 decimals)
-      expect(createTradeCall).toHaveBeenCalledWith(
+      expect(createQuote).toHaveBeenCalledWith(
         expect.objectContaining({
           amountIn: 10000n,
           sell: {
@@ -705,7 +709,7 @@ describe("buy command", () => {
       await runBuy([COIN_ADDRESS, "--eth", "0.01", "--token", "zora", "--yes"]);
 
       // 0.01 ZORA = 10000000000000000 (18 decimals)
-      expect(createTradeCall).toHaveBeenCalledWith(
+      expect(createQuote).toHaveBeenCalledWith(
         expect.objectContaining({
           amountIn: 10000000000000000n,
           sell: {
@@ -733,7 +737,7 @@ describe("buy command", () => {
         }),
       );
       expect(publicClient.getBalance).not.toHaveBeenCalled();
-      expect(createTradeCall).toHaveBeenCalledWith(
+      expect(createQuote).toHaveBeenCalledWith(
         expect.objectContaining({
           amountIn: 100000000n, // full USDC balance, no gas reserve
         }),
@@ -755,7 +759,7 @@ describe("buy command", () => {
 
       expect(publicClient.readContract).toHaveBeenCalled();
       expect(publicClient.getBalance).not.toHaveBeenCalled();
-      expect(createTradeCall).toHaveBeenCalledWith(
+      expect(createQuote).toHaveBeenCalledWith(
         expect.objectContaining({
           amountIn: 50000000n, // 50% of 100 USDC
         }),
@@ -769,7 +773,7 @@ describe("buy command", () => {
       await runBuy([COIN_ADDRESS, "--all", "--token", "zora", "--yes"]);
 
       // Full balance, no gas reserve subtracted
-      expect(createTradeCall).toHaveBeenCalledWith(
+      expect(createQuote).toHaveBeenCalledWith(
         expect.objectContaining({
           amountIn: 1000000000000000000n,
         }),
@@ -806,6 +810,98 @@ describe("buy command", () => {
       // formatUnits(10000000, 6) = "10"
       expect(parsed.spent.amount).toBe("10");
       expect(parsed.spent.symbol).toBe("USDC");
+    });
+  });
+
+  describe("budget enforcement", () => {
+    beforeEach(() => {
+      vi.mocked(getBudget).mockReturnValue(undefined);
+    });
+
+    it("blocks a buy when spend exceeds budget cap", async () => {
+      vi.mocked(getBudget).mockReturnValue({
+        version: 1,
+        limitUsd: 100,
+        period: "lifetime",
+        optedOut: false,
+        windowStart: "2026-06-01T00:00:00.000Z",
+        ledger: [{ usd: 80, skill: "dca", at: "2026-06-02T00:00:00.000Z" }],
+      });
+      // fetchTokenPriceUsd returns 2500, so 0.1 ETH = $250 which exceeds remaining $20
+      await expect(
+        runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes"]),
+      ).rejects.toThrow("process.exit(1)");
+
+      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("exceed"));
+      expect(tradeCoin).not.toHaveBeenCalled();
+      expect(track).toHaveBeenCalledWith(
+        "cli_buy",
+        expect.objectContaining({ action: "budget_blocked" }),
+      );
+    });
+
+    it("allows a buy when spend is under budget cap", async () => {
+      vi.mocked(getBudget).mockReturnValue({
+        version: 1,
+        limitUsd: 500,
+        period: "weekly",
+        optedOut: false,
+        windowStart: new Date().toISOString(),
+        ledger: [],
+      });
+      // 0.1 ETH * $2500 = $250, under $500 cap
+      await runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes"]);
+
+      expect(tradeCoin).toHaveBeenCalled();
+    });
+
+    it("records spend in ledger after successful trade", async () => {
+      vi.mocked(getBudget).mockReturnValue({
+        version: 1,
+        limitUsd: 500,
+        period: "weekly",
+        optedOut: false,
+        windowStart: new Date().toISOString(),
+        ledger: [],
+      });
+
+      await runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes"]);
+
+      expect(saveBudget).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ledger: expect.arrayContaining([
+            expect.objectContaining({
+              usd: 250, // 0.1 ETH * $2500
+              skill: expect.stringContaining("buy"),
+            }),
+          ]),
+        }),
+      );
+    });
+
+    it("does not enforce budget when no budget is configured", async () => {
+      vi.mocked(getBudget).mockReturnValue(undefined);
+
+      await runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes"]);
+
+      expect(tradeCoin).toHaveBeenCalled();
+      expect(saveBudget).not.toHaveBeenCalled();
+    });
+
+    it("does not enforce budget when opted out", async () => {
+      vi.mocked(getBudget).mockReturnValue({
+        version: 1,
+        limitUsd: null,
+        period: "weekly",
+        optedOut: true,
+        windowStart: new Date().toISOString(),
+        ledger: [],
+      });
+
+      await runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes"]);
+
+      expect(tradeCoin).toHaveBeenCalled();
+      expect(saveBudget).not.toHaveBeenCalled();
     });
   });
 });

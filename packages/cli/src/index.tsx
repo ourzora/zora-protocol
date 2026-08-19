@@ -2,16 +2,24 @@ import { Command } from "commander";
 import { ExitPromptError } from "@inquirer/core";
 import { readFileSync } from "node:fs";
 import { setApiBaseUrl } from "@zoralabs/coins-sdk";
+import { agentCommand } from "./commands/agent.js";
 import { authCommand } from "./commands/auth.js";
 import { balanceCommand } from "./commands/balance.js";
 import { buyCommand } from "./commands/buy.js";
+import { claimCommand } from "./commands/claim.js";
+import { coinCommand } from "./commands/coin.js";
+import { commentCommand } from "./commands/comment.js";
+import { createCommand } from "./commands/create.js";
+import { dmCommand } from "./commands/dm.js";
 import { exploreCommand } from "./commands/explore.jsx";
+import { followCommand, unfollowCommand } from "./commands/follow.js";
 import { getCommand } from "./commands/get.jsx";
-import { priceHistoryCommand } from "./commands/price-history.jsx";
+import { payCommand } from "./commands/pay.js";
 import { sellCommand } from "./commands/sell.js";
 import { profileCommand } from "./commands/profile.js";
 import { sendCommand } from "./commands/send.js";
 import { setupCommand } from "./commands/setup.js";
+import { skillsCommand } from "./commands/skills.js";
 import { walletCommand } from "./commands/wallet.js";
 import { renderOnce } from "./lib/render.js";
 import { StyledHelp } from "./components/StyledHelp.js";
@@ -20,6 +28,8 @@ import { parseHelpSections } from "./lib/parse-help.js";
 import { supportsTruecolor } from "./lib/zorb-pixels.js";
 import { identify, shutdownAnalytics } from "./lib/analytics.js";
 import { CliExitError, safeExit, ERROR } from "./lib/exit.js";
+import { getJson } from "./lib/output.js";
+import { maybeNotifyNewDms } from "./messaging/notify.js";
 
 declare const PKG_VERSION: string | undefined;
 
@@ -79,17 +89,26 @@ const buildProgram = (): Command => {
     program.outputHelp();
   });
 
+  program.addCommand(agentCommand);
   program.addCommand(authCommand);
   program.addCommand(balanceCommand);
   program.addCommand(buyCommand);
+  program.addCommand(claimCommand);
+  program.addCommand(coinCommand);
+  program.addCommand(commentCommand);
+  program.addCommand(createCommand);
+  program.addCommand(dmCommand);
   program.addCommand(exploreCommand);
+  program.addCommand(followCommand);
+  program.addCommand(unfollowCommand);
   program.addCommand(getCommand);
-  program.addCommand(priceHistoryCommand);
   program.addCommand(profileCommand);
   program.addCommand(setupCommand);
+  program.addCommand(skillsCommand);
   program.addCommand(walletCommand);
   program.addCommand(sellCommand);
   program.addCommand(sendCommand);
+  program.addCommand(payCommand);
 
   // configureOutput is not inherited by subcommands, so apply it recursively.
   const applyToSubcommands = (parent: Command) => {
@@ -106,18 +125,50 @@ const buildProgram = (): Command => {
   // don't filter by arg.required here, since they're all intentionally optional.
   // Commands that have optional arguments with meaningful defaults (e.g. profile
   // defaults to the user's own wallet) are exempt from the "show help" check.
-  const argOptionalCommands = new Set(["profile"]);
+  // Exempt by full command path (e.g. "agent budget set"), not bare leaf name,
+  // so the exemption can't accidentally suppress the help guard for an unrelated
+  // future subcommand that happens to share a name. `agent budget set [amount]`
+  // is here because its amount is optional — `--no-limit` opts out instead of
+  // passing one, and its own action validates that exactly one is present.
+  // `skills add [name]` is here because `--all` installs every skill instead
+  // of passing a name, and its own action validates that exactly one is present.
+  const argOptionalCommands = new Set([
+    "profile",
+    "agent budget set",
+    "skills add",
+  ]);
+
+  const fullCommandPath = (cmd: Command): string => {
+    const parts: string[] = [];
+    let c: Command | null = cmd;
+    // Walk up to (but not including) the root program, which has no parent.
+    while (c && c.parent) {
+      parts.unshift(c.name());
+      c = c.parent;
+    }
+    return parts.join(" ");
+  };
 
   program.hook("preAction", (_thisCommand, actionCommand) => {
     const expected = actionCommand.registeredArguments.length;
     if (
       expected > 0 &&
       actionCommand.args.length === 0 &&
-      !argOptionalCommands.has(actionCommand.name())
+      !argOptionalCommands.has(fullCommandPath(actionCommand))
     ) {
       actionCommand.outputHelp();
       safeExit(ERROR);
     }
+  });
+
+  // After a successful command, surface any new DMs / message requests
+  // (throttled + best-effort; see notify.ts). Skipped for dm commands (you're
+  // already there) and for --json output (keep machine-readable output clean).
+  program.hook("postAction", async (_thisCommand, actionCommand) => {
+    const underDm =
+      actionCommand.name() === "dm" || actionCommand.parent?.name() === "dm";
+    if (underDm || getJson(actionCommand)) return;
+    await maybeNotifyNewDms();
   });
 
   return program;

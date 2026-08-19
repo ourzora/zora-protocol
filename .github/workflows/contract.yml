@@ -8,6 +8,10 @@ on:
       coverage_args:
         required: false
         type: string
+      minimum_coverage:
+        required: false
+        type: number
+        default: 86
       name:
         required: true
         type: string
@@ -83,3 +87,4 @@ jobs:
       package_folder: ${{ inputs.package_folder }}
       files_to_ignore: ${{ inputs.ignore_coverage_files }}
       coverage_args: ${{ inputs.coverage_args }}
+      minimum_coverage: ${{ inputs.minimum_coverage }}

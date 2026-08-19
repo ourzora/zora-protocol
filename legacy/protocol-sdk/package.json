@@ -1,6 +1,6 @@
 {
   "name": "@zoralabs/protocol-sdk",
-  "version": "0.13.21",
+  "version": "0.13.22",
   "repository": "https://github.com/ourzora/zora-protocol",
   "license": "MIT",
   "type": "module",
@@ -29,7 +29,7 @@
     "@zoralabs/protocol-deployments": "workspace:^"
   },
   "peerDependencies": {
-    "viem": "2.22.12",
+    "viem": "2.53.1",
     "abitype": "^1.0.2"
   },
   "devDependencies": {

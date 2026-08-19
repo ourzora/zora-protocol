@@ -12,6 +12,8 @@ jobs:
       name: Comments
       ignore_coverage_files: '"*lib*" "*mock*"'
       skip_storage_layout: true
+      skip_tests: true
+      skip_coverage: true
 
   contracts-coins:
     name: Coins

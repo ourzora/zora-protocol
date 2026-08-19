@@ -2,6 +2,20 @@
 
 import path from "node:path";
 import os from "node:os";
+import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
+
+// Best-effort: fix the XMTP macOS native binding's libiconv link so `zora`'s DM
+// commands load without a DYLD_FALLBACK_LIBRARY_PATH workaround. No-op on
+// non-macOS, missing Xcode toolchain, or when already correct. Never fails install.
+try {
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  execFileSync(process.execPath, [path.join(here, "patch-xmtp-binding.mjs")], {
+    stdio: "inherit",
+  });
+} catch {
+  // ignore — see patch-xmtp-binding.mjs
+}
 
 try {
   if (process.env.npm_config_global !== "true") {

@@ -16,10 +16,11 @@ const useAutoRefresh = (
   const [resetCount, setResetCount] = useState(0);
 
   const triggerManualRefresh = useCallback(() => {
-    if (!enabled) return;
     setRefreshCount((c) => c + 1);
-    setSecondsUntilRefresh(intervalSeconds);
-    setResetCount((c) => c + 1);
+    if (enabled) {
+      setSecondsUntilRefresh(intervalSeconds);
+      setResetCount((c) => c + 1);
+    }
   }, [enabled, intervalSeconds]);
 
   useEffect(() => {
@@ -40,11 +41,11 @@ const useAutoRefresh = (
     return () => clearInterval(ticker);
   }, [enabled, intervalSeconds, resetCount]);
 
-  if (!enabled) {
-    return { refreshCount: 0, secondsUntilRefresh: 0, triggerManualRefresh };
-  }
-
-  return { refreshCount, secondsUntilRefresh, triggerManualRefresh };
+  return {
+    refreshCount,
+    secondsUntilRefresh: enabled ? secondsUntilRefresh : 0,
+    triggerManualRefresh,
+  };
 };
 
 export { useAutoRefresh, type UseAutoRefreshReturn };

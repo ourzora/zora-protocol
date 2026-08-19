@@ -4,6 +4,7 @@ vi.mock("./config.js", () => ({
   getPrivateKey: vi.fn(),
   savePrivateKey: vi.fn(),
   getWalletPath: vi.fn(() => "/tmp/.zora/wallet.json"),
+  peekAgentWallet: vi.fn(),
 }));
 
 vi.mock("viem/accounts", () => ({
@@ -17,7 +18,7 @@ vi.mock("./prompt.js", () => ({
   confirmOrDefault: vi.fn(),
 }));
 
-import { getPrivateKey, savePrivateKey } from "./config.js";
+import { getPrivateKey, savePrivateKey, peekAgentWallet } from "./config.js";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { selectOrDefault, confirmOrDefault } from "./prompt.js";
 import { configureWallet } from "./wallet-setup.js";
@@ -37,6 +38,7 @@ describe("configureWallet", () => {
       throw new Error(`process.exit(${code})`);
     });
     vi.mocked(getPrivateKey).mockReturnValue(undefined);
+    vi.mocked(peekAgentWallet).mockReturnValue(undefined);
     vi.mocked(generatePrivateKey).mockReturnValue(MOCK_KEY);
     vi.mocked(privateKeyToAccount).mockReturnValue({
       address: MOCK_ADDRESS,
@@ -177,6 +179,68 @@ describe("configureWallet", () => {
         }),
         false,
       );
+    });
+  });
+
+  describe("agent wallet", () => {
+    const AGENT = {
+      address: "0xAbC0000000000000000000000000000000000001",
+      embeddedWalletAddress: "0xEeE0000000000000000000000000000000000001",
+      smartWalletAddress: "0xd1373e4119dD2C4C23f11F9cDc97A464790acbC8",
+      did: "did:privy:test",
+      username: "keen_cedar_9807",
+      profileUrl: "https://zora.co/@keen_cedar_9807",
+      createdAt: "2026-06-10T00:00:00.000Z",
+    } as const;
+
+    it("refuses to overwrite non-interactively, even with force", async () => {
+      vi.mocked(peekAgentWallet).mockReturnValue(AGENT);
+
+      await expect(
+        configureWallet({
+          json: false,
+          nonInteractive: true,
+          create: true,
+          force: true,
+        }),
+      ).rejects.toThrow("process.exit(1)");
+      expect(savePrivateKey).not.toHaveBeenCalled();
+    });
+
+    it("prompts and overwrites when confirmed interactively", async () => {
+      vi.mocked(peekAgentWallet).mockReturnValue(AGENT);
+      vi.mocked(confirmOrDefault).mockResolvedValue(true);
+
+      const result = await configureWallet({
+        json: false,
+        nonInteractive: false,
+        create: true,
+        force: true,
+      });
+
+      expect(result.action).toBe("created");
+      expect(savePrivateKey).toHaveBeenCalledWith(MOCK_KEY);
+      expect(confirmOrDefault).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining("keen_cedar_9807"),
+        }),
+        false,
+      );
+    });
+
+    it("treats force as no bypass; aborts when the prompt is declined", async () => {
+      vi.mocked(peekAgentWallet).mockReturnValue(AGENT);
+      vi.mocked(confirmOrDefault).mockResolvedValue(false);
+
+      await expect(
+        configureWallet({
+          json: false,
+          nonInteractive: false,
+          create: true,
+          force: true,
+        }),
+      ).rejects.toThrow("process.exit(0)");
+      expect(savePrivateKey).not.toHaveBeenCalled();
     });
   });
 });

@@ -11,10 +11,12 @@ function makeCoin(overrides: Partial<ResolvedCoin> = {}): ResolvedCoin {
     marketCap: "5000000",
     marketCapDelta24h: "100000",
     volume24h: "250000",
+    totalSupply: "1000000000",
     uniqueHolders: 1842,
     createdAt: "2026-03-01T14:30:00Z",
     creatorAddress: "0xcreatoraddr",
     creatorHandle: "alice",
+    platformBlocked: false,
     ...overrides,
   };
 }

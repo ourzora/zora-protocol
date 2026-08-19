@@ -14,6 +14,8 @@ import type {
   GetCoinCommentsResponse,
   GetCoinHoldersData,
   GetCoinHoldersResponse,
+  GetCoinMergedCommentsData,
+  GetCoinMergedCommentsResponse,
   GetCoinPriceHistoryData,
   GetCoinPriceHistoryResponse,
   GetCoinSwapsData,
@@ -168,6 +170,28 @@ export const getCoinHolders = <ThrowOnError extends boolean = false>(
       },
     ],
     url: "/coinHolders",
+    ...options,
+  });
+};
+
+/**
+ * zoraSDK_coinMergedComments query
+ */
+export const getCoinMergedComments = <ThrowOnError extends boolean = false>(
+  options: Options<GetCoinMergedCommentsData, ThrowOnError>,
+) => {
+  return (options.client ?? _heyApiClient).get<
+    GetCoinMergedCommentsResponse,
+    unknown,
+    ThrowOnError
+  >({
+    security: [
+      {
+        name: "api-key",
+        type: "apiKey",
+      },
+    ],
+    url: "/coinMergedComments",
     ...options,
   });
 };

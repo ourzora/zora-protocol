@@ -8,6 +8,7 @@ import {
   type BalanceNode,
   type SortFlag,
   SORT_LABELS,
+  API_KEY_BANNER,
 } from "../lib/balance-columns.js";
 import type {
   WalletBalance,
@@ -15,34 +16,32 @@ import type {
 } from "../lib/wallet-balances.js";
 import { useAutoRefresh } from "../hooks/use-auto-refresh.js";
 import { copyToClipboard } from "../lib/clipboard.js";
-import type { PageInfo } from "../lib/types.js";
 
-type BalanceMode = "full" | "wallet" | "coins";
+type BalanceMode = "full" | "wallet";
 
 type BalanceData = {
   walletBalances: WalletBalance[];
   walletBalancesJson: WalletBalanceJson[];
   rankedBalances: (BalanceNode & { rank: number })[];
   total: number;
-  pageInfo?: PageInfo;
 };
 
 type BalanceViewProps = {
-  fetchData: (cursor?: string) => Promise<BalanceData>;
+  fetchData: () => Promise<BalanceData>;
   sort: SortFlag;
   mode?: BalanceMode;
-  initialCursor?: string;
   autoRefresh?: boolean;
   intervalSeconds?: number;
+  hasApiKey?: boolean;
 };
 
 const BalanceView = ({
   fetchData,
   sort,
   mode = "full",
-  initialCursor,
   autoRefresh = false,
   intervalSeconds = 30,
+  hasApiKey = false,
 }: BalanceViewProps) => {
   const { exit } = useApp();
   const [loading, setLoading] = useState(true);
@@ -50,48 +49,35 @@ const BalanceView = ({
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<BalanceData | null>(null);
 
-  const paginated = mode === "coins";
-  const [page, setPage] = useState(1);
-  const [cursorHistory, setCursorHistory] = useState<(string | undefined)[]>(
-    [],
-  );
-  const [currentCursor, setCurrentCursor] = useState<string | undefined>(
-    initialCursor,
-  );
-
   const { refreshCount, secondsUntilRefresh, triggerManualRefresh } =
     useAutoRefresh(intervalSeconds, autoRefresh);
-  const [manualRefreshCount, setManualRefreshCount] = useState(0);
   const hasLoadedOnce = useRef(false);
   const [selectedRow, setSelectedRow] = useState(0);
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
 
-  const load = useCallback(
-    async (cursor?: string) => {
-      if (hasLoadedOnce.current) {
-        setIsRefreshing(true);
-      } else {
-        setLoading(true);
-      }
-      setError(null);
-      try {
-        const result = await fetchData(cursor);
-        setData(result);
-        hasLoadedOnce.current = true;
-      } catch (err) {
-        setError(err instanceof Error ? err.message : String(err));
-      }
-      setLoading(false);
-      setIsRefreshing(false);
-    },
-    [fetchData],
-  );
+  const load = useCallback(async () => {
+    if (hasLoadedOnce.current) {
+      setIsRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+    setError(null);
+    try {
+      const result = await fetchData();
+      setData(result);
+      hasLoadedOnce.current = true;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+    setLoading(false);
+    setIsRefreshing(false);
+  }, [fetchData]);
 
   useEffect(() => {
-    load(currentCursor);
-  }, [load, refreshCount, manualRefreshCount, currentCursor]);
+    load();
+  }, [load, refreshCount]);
 
-  const showCoins = mode === "full" || mode === "coins";
+  const showCoins = mode === "full";
 
   useEffect(() => {
     if (data && showCoins) {
@@ -130,28 +116,7 @@ const BalanceView = ({
 
     if (input === "r") {
       triggerManualRefresh();
-      setManualRefreshCount((c) => c + 1);
       return;
-    }
-
-    if (!paginated) return;
-
-    const canGoNext = data?.pageInfo?.hasNextPage && data.pageInfo.endCursor;
-    const canGoPrev = cursorHistory.length > 0;
-
-    if ((input === "n" || key.rightArrow) && canGoNext) {
-      setCursorHistory((prev) => [...prev, currentCursor]);
-      setCurrentCursor(data!.pageInfo!.endCursor);
-      setPage((p) => p + 1);
-      setSelectedRow(0);
-    }
-
-    if ((input === "p" || key.leftArrow) && canGoPrev) {
-      const prev = cursorHistory[cursorHistory.length - 1];
-      setCursorHistory((h) => h.slice(0, -1));
-      setCurrentCursor(prev);
-      setPage((p) => p - 1);
-      setSelectedRow(0);
     }
   });
 
@@ -188,8 +153,6 @@ const BalanceView = ({
     hints.push("\u2191\u2193 select");
     hints.push("enter/c copy address");
   }
-  if (paginated && cursorHistory.length > 0) hints.push("\u2190 prev");
-  if (paginated && data?.pageInfo?.hasNextPage) hints.push("\u2192 next");
   hints.push(autoRefresh ? `r refresh (${secondsUntilRefresh}s)` : "r refresh");
   hints.push("q quit");
   const footer =
@@ -231,14 +194,15 @@ const BalanceView = ({
           columns={balanceColumns}
           data={data.rankedBalances}
           title={`Coins · sorted by ${SORT_LABELS[sort]}`}
-          subtitle={
-            paginated
-              ? `Page ${page} \u00b7 ${data.rankedBalances.length} result${data.rankedBalances.length !== 1 ? "s" : ""}`
-              : `${data.rankedBalances.length} of ${data.total}`
-          }
+          subtitle={`${data.rankedBalances.length} of ${data.total}`}
           selectedRow={selectedRow}
         />
       ) : null}
+      {!hasApiKey && showCoins && data.rankedBalances.length > 0 && (
+        <Box paddingLeft={1}>
+          <Text dimColor>{API_KEY_BANNER}</Text>
+        </Box>
+      )}
       <Box paddingLeft={1} paddingBottom={1}>
         <Text dimColor>{footer}</Text>
       </Box>

@@ -2,6 +2,7 @@
 src = "src"
 test = "test"
 libs = ["node_modules"]
+evm_version = "cancun"
 via_ir = true
 optimizer = true
 solc_version = '0.8.28'

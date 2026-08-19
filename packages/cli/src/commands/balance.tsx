@@ -1,44 +1,44 @@
+import { getProfileBalances, setApiKey } from "@zoralabs/coins-sdk";
 import { Command } from "commander";
 import { Box, Text } from "ink";
-import { getProfileBalances, setApiKey } from "@zoralabs/coins-sdk";
-import { getApiKey } from "../lib/config.js";
+import { BalanceCoinsView } from "../components/BalanceCoinsView.js";
+import { BalanceView, type BalanceData } from "../components/BalanceView.js";
+import type { PageResult } from "../components/PaginatedTableView.js";
+import { Table } from "../components/table.js";
+import { track } from "../lib/analytics.js";
 import {
-  getOutputMode,
+  API_KEY_BANNER,
+  balanceColumns,
+  SORT_LABELS,
+  walletColumns,
+  type BalanceNode,
+  type SortFlag,
+} from "../lib/balance-columns.js";
+import {
+  computeBalanceUsdValue,
+  normalizeTokenAmount,
+} from "../lib/balance-format.js";
+import { getApiKey } from "../lib/config.js";
+import { apiErrorMessage, extractErrorMessage } from "../lib/errors.js";
+import { computeMarketCapChange24h, formatCoinType } from "../lib/format.js";
+import {
   getLiveConfig,
+  getOutputMode,
   outputData,
   outputErrorAndExit,
 } from "../lib/output.js";
-import { renderOnce, renderLive } from "../lib/render.js";
-import { BalanceView, type BalanceData } from "../components/BalanceView.js";
-import { Table } from "../components/table.js";
-import { computeMarketCapChange24h, formatCoinType } from "../lib/format.js";
-import { resolveAccount } from "../lib/wallet.js";
-import {
-  parseRawBalance,
-  normalizeTokenAmount,
-} from "../lib/balance-format.js";
-import {
-  fetchWalletBalances,
-  type WalletBalance,
-  type WalletBalanceJson,
-} from "../lib/wallet-balances.js";
-import { track } from "../lib/analytics.js";
+import { renderLive, renderOnce } from "../lib/render.js";
 import type { PageInfo } from "../lib/types.js";
-import { apiErrorMessage } from "../lib/errors.js";
-import {
-  walletColumns,
-  balanceColumns,
-  SORT_LABELS,
-  type SortFlag,
-  type BalanceNode,
-} from "../lib/balance-columns.js";
+import { fetchWalletBalances } from "../lib/wallet-balances.js";
+import { resolveAccounts } from "../lib/wallet.js";
 
 export {
-  walletColumns,
+  API_KEY_BANNER,
   balanceColumns,
   SORT_LABELS,
-  type SortFlag,
+  walletColumns,
   type BalanceNode,
+  type SortFlag,
 };
 
 type FormattedBalanceJson = {
@@ -73,13 +73,6 @@ const SORT_MAP: Record<
 
 const SORT_OPTIONS = Object.keys(SORT_LABELS).join(", ");
 
-const extractErrorMessage = (error: unknown): string => {
-  if (typeof error === "object" && error !== null && "error" in error) {
-    return String((error as Record<string, unknown>).error);
-  }
-  return JSON.stringify(error);
-};
-
 const formatBalanceJson = (
   balance: BalanceNode,
   rank: number,
@@ -98,10 +91,13 @@ const formatBalanceJson = (
     ? Number(balance.coin.totalVolume)
     : null;
   const priceUsdValue = priceUsd ? Number(priceUsd) : null;
-  const usdValue =
-    priceUsdValue !== null
-      ? Number((parseRawBalance(balance.balance) * priceUsdValue).toFixed(6))
-      : null;
+
+  const usdValue = computeBalanceUsdValue(
+    balance.balance,
+    balance.valuation?.marketValueUsd,
+    priceUsd,
+  );
+
   const marketCapChange24h = computeMarketCapChange24h(
     marketCap,
     marketCapDelta24h,
@@ -130,23 +126,29 @@ const formatBalanceJson = (
 
 // --- Shared helpers ---
 
-function resolveContext(json: boolean) {
-  const account = resolveAccount(json);
+async function resolveContext() {
+  const { privateKeyAccount: account, smartWalletAccount } =
+    await resolveAccounts();
 
   const apiKey = getApiKey();
   if (apiKey) {
     setApiKey(apiKey);
   }
 
-  return account;
+  return {
+    account,
+    smartWalletAccount,
+    hasApiKey: !!apiKey,
+  };
 }
 
 function renderWallet(
   json: boolean,
+  walletAddress: string,
   walletResult: Awaited<ReturnType<typeof fetchWalletBalances>>,
 ) {
   outputData(json, {
-    json: { wallet: walletResult.walletBalancesJson },
+    json: { walletAddress, wallet: walletResult.walletBalancesJson },
     render: () => {
       renderOnce(
         <Table
@@ -161,11 +163,13 @@ function renderWallet(
 
 function renderCoins(
   json: boolean,
+  walletAddress: string,
   balances: BalanceNode[],
   total: number,
   sort: SortFlag,
   limit: number,
   pageInfo?: PageInfo,
+  hasApiKey?: boolean,
 ) {
   const rankedBalances = balances.map((balance, index) => ({
     ...balance,
@@ -174,6 +178,7 @@ function renderCoins(
 
   outputData(json, {
     json: {
+      walletAddress,
       coins: rankedBalances.map((balance) =>
         formatBalanceJson(balance, balance.rank),
       ),
@@ -190,13 +195,20 @@ function renderCoins(
             ? `Next page: zora balance coins --sort ${sort} --limit ${limit} --after ${pageInfo.endCursor}`
             : undefined;
         renderOnce(
-          <Table
-            columns={balanceColumns}
-            data={rankedBalances}
-            title={`Coins · sorted by ${SORT_LABELS[sort]}`}
-            subtitle={`${balances.length} of ${total}`}
-            footer={footer}
-          />,
+          <Box flexDirection="column">
+            <Table
+              columns={balanceColumns}
+              data={rankedBalances}
+              title={`Coins · sorted by ${SORT_LABELS[sort]}`}
+              subtitle={`${balances.length} of ${total}`}
+              footer={footer}
+            />
+            {!hasApiKey && (
+              <Box paddingLeft={1}>
+                <Text dimColor>{API_KEY_BANNER}</Text>
+              </Box>
+            )}
+          </Box>,
         );
       }
     },
@@ -219,11 +231,11 @@ async function fetchCoins(
       after,
     });
   } catch (err) {
-    outputErrorAndExit(json, `Request failed: ${apiErrorMessage(err)}`);
+    return outputErrorAndExit(json, `Request failed: ${apiErrorMessage(err)}`);
   }
 
   if (response.error) {
-    outputErrorAndExit(
+    return outputErrorAndExit(
       json,
       `API error: ${extractErrorMessage(response.error)}`,
     );
@@ -275,16 +287,18 @@ export const balanceCommand = new Command("balance")
   .action(async function (this: Command) {
     const output = getOutputMode(this, "live");
     const json = output === "json";
-    const account = resolveContext(json);
+    const { account, smartWalletAccount, hasApiKey } = await resolveContext();
     const { live, intervalSeconds } = getLiveConfig(this, output);
+
+    const walletAddress = smartWalletAccount?.address ?? account.address;
 
     const sort: SortFlag = "usd-value";
     const limit = 10;
 
     const fetchBalanceData = async (): Promise<BalanceData> => {
       const [walletResult, coinsResult] = await Promise.allSettled([
-        fetchWalletBalances(account.address),
-        fetchCoins(json, account.address, sort, limit),
+        fetchWalletBalances(walletAddress),
+        fetchCoins(json, walletAddress, sort, limit),
       ]);
 
       if (
@@ -320,6 +334,7 @@ export const balanceCommand = new Command("balance")
 
       outputData(json, {
         json: {
+          walletAddress,
           wallet: data.walletBalancesJson,
           coins: data.rankedBalances.map((balance) =>
             formatBalanceJson(balance, balance.rank),
@@ -344,6 +359,7 @@ export const balanceCommand = new Command("balance")
           mode="full"
           autoRefresh={live}
           intervalSeconds={intervalSeconds}
+          hasApiKey={hasApiKey}
         />,
       );
 
@@ -380,12 +396,19 @@ export const balanceCommand = new Command("balance")
               </Box>
             </Box>
           ) : (
-            <Table
-              columns={balanceColumns}
-              data={data.rankedBalances}
-              title={`Coins · sorted by ${SORT_LABELS[sort]}`}
-              subtitle={`${data.rankedBalances.length} of ${data.total}`}
-            />
+            <>
+              <Table
+                columns={balanceColumns}
+                data={data.rankedBalances}
+                title={`Coins · sorted by ${SORT_LABELS[sort]}`}
+                subtitle={`${data.rankedBalances.length} of ${data.total}`}
+              />
+              {!hasApiKey && (
+                <Box paddingLeft={1}>
+                  <Text dimColor>{API_KEY_BANNER}</Text>
+                </Box>
+              )}
+            </>
           )}
         </Box>,
       );
@@ -414,11 +437,13 @@ balanceCommand
   .action(async function (this: Command) {
     const output = getOutputMode(this, "live");
     const json = output === "json";
-    const account = resolveContext(json);
+    const { account, smartWalletAccount } = await resolveContext();
     const { live, intervalSeconds } = getLiveConfig(this, output);
 
+    const walletAddress = smartWalletAccount?.address ?? account.address;
+
     const fetchSpendableData = async (): Promise<BalanceData> => {
-      const walletResult = await fetchWalletBalances(account.address);
+      const walletResult = await fetchWalletBalances(walletAddress);
       return {
         walletBalances: walletResult.walletBalances,
         walletBalancesJson: walletResult.walletBalancesJson,
@@ -432,7 +457,7 @@ balanceCommand
         outputErrorAndExit(json, `Request failed: ${apiErrorMessage(err)}`),
       );
       outputData(json, {
-        json: { wallet: data.walletBalancesJson },
+        json: { walletAddress, wallet: data.walletBalancesJson },
         render: () => {},
       });
     } else if (live) {
@@ -446,11 +471,11 @@ balanceCommand
         />,
       );
     } else {
-      const walletResult = await fetchWalletBalances(account.address).catch(
+      const walletResult = await fetchWalletBalances(walletAddress).catch(
         (err) =>
           outputErrorAndExit(json, `Request failed: ${apiErrorMessage(err)}`),
       );
-      renderWallet(json, walletResult);
+      renderWallet(json, walletAddress, walletResult);
     }
   });
 
@@ -472,59 +497,64 @@ balanceCommand
     const json = output === "json";
     const { sort, limit } = validateCoinOpts(json, opts.sort, opts.limit);
     const after: string | undefined = opts.after;
-    const account = resolveContext(json);
+    const { account, smartWalletAccount, hasApiKey } = await resolveContext();
     const { live, intervalSeconds } = getLiveConfig(this, output);
 
-    const fetchCoinsPage = async (cursor?: string): Promise<BalanceData> => {
+    const walletAddress = smartWalletAccount?.address ?? account.address;
+
+    const fetchCoinsPage = async (
+      cursor?: string,
+    ): Promise<PageResult<BalanceNode>> => {
       const { balances, total, pageInfo } = await fetchCoins(
         json,
-        account.address,
+        walletAddress,
         sort,
         limit,
         cursor,
       );
-      const rankedBalances = balances.map((balance, index) => ({
-        ...balance,
-        rank: index + 1,
-      }));
-      return {
-        walletBalances: [],
-        walletBalancesJson: [],
-        rankedBalances,
-        total,
-        pageInfo,
-      };
+      return { items: balances, count: total, pageInfo };
     };
 
     if (json) {
-      const data = await fetchCoinsPage(after);
+      const { items, count, pageInfo } = await fetchCoinsPage(after);
       renderCoins(
         json,
-        data.rankedBalances,
-        data.total,
+        walletAddress,
+        items,
+        count ?? items.length,
         sort,
         limit,
-        data.pageInfo,
+        pageInfo,
       );
     } else if (live) {
       await renderLive(
-        <BalanceView
-          fetchData={fetchCoinsPage}
+        <BalanceCoinsView
+          fetchPage={fetchCoinsPage}
           sort={sort}
-          mode="coins"
+          limit={limit}
           initialCursor={after}
           autoRefresh={live}
           intervalSeconds={intervalSeconds}
+          hasApiKey={hasApiKey}
         />,
       );
     } else {
       const { balances, total, pageInfo } = await fetchCoins(
         json,
-        account.address,
+        walletAddress,
         sort,
         limit,
         after,
       );
-      renderCoins(json, balances, total, sort, limit, pageInfo);
+      renderCoins(
+        json,
+        walletAddress,
+        balances,
+        total,
+        sort,
+        limit,
+        pageInfo,
+        hasApiKey,
+      );
     }
   });

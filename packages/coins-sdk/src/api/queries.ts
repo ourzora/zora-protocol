@@ -1,9 +1,13 @@
 import {
   GetCoinCommentsData,
   GetCoinCommentsResponse,
+  GetCoinMergedCommentsData,
+  GetCoinMergedCommentsResponse,
   GetCoinData,
   GetCoinHoldersData,
   GetCoinHoldersResponse,
+  GetCoinPriceHistoryData,
+  GetCoinPriceHistoryResponse,
   GetCoinResponse,
   GetCoinsData,
   GetCoinsResponse,
@@ -29,12 +33,16 @@ import {
   GetCreatorCoinPoolConfigResponse,
   GetCreatorLivestreamCommentsData,
   GetCreatorLivestreamCommentsResponse,
+  GetWalletTradeActivityData,
+  GetWalletTradeActivityResponse,
 } from "../client/types.gen";
 import {
   getCoin as getCoinSDK,
   getCoins as getCoinsSDK,
   getCoinComments as getCoinCommentsSDK,
+  getCoinMergedComments as getCoinMergedCommentsSDK,
   getCoinHolders as getCoinHoldersSDK,
+  getCoinPriceHistory as getCoinPriceHistorySDK,
   getCoinSwaps as getCoinSwapsSDK,
   getProfile as getProfileSDK,
   getProfileBalances as getProfileBalancesSDK,
@@ -46,6 +54,7 @@ import {
   getContentCoinPoolConfig as getContentCoinPoolConfigSDK,
   getCreatorCoinPoolConfig as getCreatorCoinPoolConfigSDK,
   getCreatorLivestreamComments as getCreatorLivestreamCommentsSDK,
+  getWalletTradeActivity as getWalletTradeActivitySDK,
 } from "../client/sdk.gen";
 import { getApiKeyMeta } from "./api-key";
 import { RequestOptionsType } from "./query-types";
@@ -102,6 +111,21 @@ export const getCoinHolders = async (
   });
 };
 
+type GetCoinPriceHistoryQuery = GetCoinPriceHistoryData["query"];
+export type { GetCoinPriceHistoryQuery, GetCoinPriceHistoryData };
+export type { GetCoinPriceHistoryResponse } from "../client/types.gen";
+
+export const getCoinPriceHistory = async (
+  query: GetCoinPriceHistoryQuery,
+  options?: RequestOptionsType<GetCoinPriceHistoryData>,
+): Promise<RequestResult<GetCoinPriceHistoryResponse>> => {
+  return await getCoinPriceHistorySDK({
+    query,
+    ...getApiKeyMeta(),
+    ...options,
+  });
+};
+
 type GetCoinSwapsQuery = GetCoinSwapsData["query"];
 export type { GetCoinSwapsQuery, GetCoinSwapsData };
 export type { GetCoinSwapsResponse } from "../client/types.gen";
@@ -126,6 +150,28 @@ export const getCoinComments = async (
   options?: RequestOptionsType<GetCoinCommentsData>,
 ): Promise<RequestResult<GetCoinCommentsResponse>> => {
   return await getCoinCommentsSDK({
+    query,
+    ...getApiKeyMeta(),
+    ...options,
+  });
+};
+
+type GetCoinMergedCommentsQuery = GetCoinMergedCommentsData["query"];
+export type { GetCoinMergedCommentsQuery, GetCoinMergedCommentsData };
+export type { GetCoinMergedCommentsResponse } from "../client/types.gen";
+
+/**
+ * Fetches a coin's unified comment feed — on-chain, backfilled, and off-chain
+ * comments — pre-sorted newest-first under a single cursor. Mirrors the
+ * `GraphQLMergedComment` union that web and mobile consume. Unlike
+ * {@link getCoinComments} (on-chain `zoraComments` only), this includes
+ * off-chain comments.
+ */
+export const getCoinMergedComments = async (
+  query: GetCoinMergedCommentsQuery,
+  options?: RequestOptionsType<GetCoinMergedCommentsData>,
+): Promise<RequestResult<GetCoinMergedCommentsResponse>> => {
+  return await getCoinMergedCommentsSDK({
     query,
     ...getApiKeyMeta(),
     ...options,
@@ -280,6 +326,21 @@ export const getCreatorLivestreamComments = async (
   options?: RequestOptionsType<GetCreatorLivestreamCommentsData>,
 ): Promise<RequestResult<GetCreatorLivestreamCommentsResponse>> => {
   return await getCreatorLivestreamCommentsSDK({
+    query,
+    ...getApiKeyMeta(),
+    ...options,
+  });
+};
+
+type GetWalletTradeActivityQuery = GetWalletTradeActivityData["query"];
+export type { GetWalletTradeActivityQuery, GetWalletTradeActivityData };
+export type { GetWalletTradeActivityResponse } from "../client/types.gen";
+
+export const getWalletTradeActivity = async (
+  query: GetWalletTradeActivityQuery,
+  options?: RequestOptionsType<GetWalletTradeActivityData>,
+): Promise<RequestResult<GetWalletTradeActivityResponse>> => {
+  return await getWalletTradeActivitySDK({
     query,
     ...getApiKeyMeta(),
     ...options,

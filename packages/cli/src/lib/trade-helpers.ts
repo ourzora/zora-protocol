@@ -5,12 +5,47 @@ import {
   parseEventLogs,
   erc20Abi,
   type Address,
+  type PublicClient,
   type TransactionReceipt,
 } from "viem";
 import { outputErrorAndExit, outputJson } from "./output.js";
 import { formatAmountDisplay } from "./format.js";
 
 export const GAS_RESERVE = parseEther("0.00001");
+
+/**
+ * Conservative per-operation gas ceilings used to size the ETH a smart wallet
+ * holds back for its user-operation prefund. Real usage is lower; the headroom
+ * keeps the reserve safe across fee spikes and swap-route variation.
+ */
+export const SMART_WALLET_GAS_LIMITS = {
+  // A Uniswap route is the heaviest op the CLI submits (~3.5M gas observed).
+  swap: 5_000_000n,
+  // A plain ETH / ERC-20 transfer through the smart wallet.
+  transfer: 500_000n,
+} as const;
+
+/**
+ * Computes the ETH a smart wallet must reserve to pay its user-operation
+ * prefund when spending the native balance via `--all` / `--percent`.
+ *
+ * An EOA pays gas from its balance as a separate transaction, so a tiny fixed
+ * {@link GAS_RESERVE} suffices. A smart wallet instead pays gas from its own ETH
+ * via the user-operation prefund (`maxFeePerGas × gasLimit`); if `--all` spent
+ * the whole balance the prefund could not be covered and the bundler would
+ * reject the op with an AA21 precheck failure. The reserve mirrors the bundler
+ * client's 2x live-fee buffer times a conservative gas ceiling, so the leftover
+ * balance always covers the prefund.
+ */
+export const estimateSmartWalletGasReserve = async (
+  publicClient: Pick<PublicClient, "estimateFeesPerGas">,
+  operation: keyof typeof SMART_WALLET_GAS_LIMITS,
+): Promise<bigint> => {
+  // 2x matches FEE_BUFFER_MULTIPLIER in client/bundler.ts, which sets the op's
+  // maxFeePerGas to twice the live Base estimate.
+  const { maxFeePerGas } = await publicClient.estimateFeesPerGas();
+  return maxFeePerGas * 2n * SMART_WALLET_GAS_LIMITS[operation];
+};
 
 export const BUY_AMOUNT_CHECKS = {
   eth: (opts: Record<string, unknown>) => opts.eth !== undefined,

@@ -49,4 +49,5 @@ export const tokenId1155 = 3n;
 export const smartWalletAccount = await toCoinbaseSmartAccount({
   client: publicClient,
   owners: [],
+  version: "1.1",
 });

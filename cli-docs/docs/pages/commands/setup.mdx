@@ -52,10 +52,16 @@ npx @zoralabs/cli setup --create --json
 
 ```json
 {
-  "address": "0xb4a06BdD9e0E60FFE22E4E7590842bfD2069034E",
-  "source": "~/.config/zora/wallet.json"
+  "wallet": {
+    "action": "created",
+    "address": "0xb4a06BdD9e0E60FFE22E4E7590842bfD2069034E",
+    "path": "~/.config/zora/wallet.json"
+  },
+  "apiKey": "skipped"
 }
 ```
+
+The `wallet.action` field reflects what happened: `created`, `imported`, `env_detected` (a `ZORA_PRIVATE_KEY` was already set), or `skipped` (an existing wallet was kept). The `path` field is present only for `created` and `imported`. The `apiKey` field is one of `saved`, `skipped`, `env_override`, or `already_set`.
 
 ### Overwrite existing wallet
 

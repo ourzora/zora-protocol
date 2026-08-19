@@ -5,6 +5,7 @@ vi.mock("../lib/config.js", () => ({
   getPrivateKey: vi.fn(),
   savePrivateKey: vi.fn(),
   getWalletPath: vi.fn(() => "/tmp/.zora/wallet.json"),
+  peekAgentWallet: vi.fn(),
   getApiKey: vi.fn(),
   getEnvApiKey: vi.fn(),
   saveApiKey: vi.fn(),
@@ -27,6 +28,7 @@ import {
   getPrivateKey,
   savePrivateKey,
   getWalletPath,
+  peekAgentWallet,
   getApiKey,
   getEnvApiKey,
   saveApiKey,
@@ -438,6 +440,61 @@ describe("setup command", () => {
       expect(parsed).toHaveProperty("apiKey");
       expect(parsed.wallet.action).toBe("created");
       expect(parsed.apiKey).toBe("skipped");
+    });
+  });
+
+  describe("agent wallet guard", () => {
+    const AGENT = {
+      address: "0xAbC0000000000000000000000000000000000001",
+      embeddedWalletAddress: "0xEeE0000000000000000000000000000000000001",
+      smartWalletAddress: "0xd1373e4119dD2C4C23f11F9cDc97A464790acbC8",
+      did: "did:privy:test",
+      username: "keen_cedar_9807",
+      profileUrl: "https://zora.co/@keen_cedar_9807",
+      createdAt: "2026-06-10T00:00:00.000Z",
+    } as const;
+
+    it("refuses to overwrite an agent wallet in --yes mode", async () => {
+      vi.mocked(peekAgentWallet).mockReturnValue(AGENT);
+
+      await expect(runSetup(["--create", "--yes"])).rejects.toThrow(
+        "process.exit(1)",
+      );
+
+      expect(savePrivateKey).not.toHaveBeenCalled();
+      const out = [
+        ...logSpy.mock.calls.map((c) => c[0]),
+        ...errorSpy.mock.calls.map((c) => c[0]),
+      ].join("\n");
+      expect(out).toContain("keen_cedar_9807");
+    });
+
+    it("prompts and proceeds when confirmed (interactive)", async () => {
+      vi.mocked(peekAgentWallet).mockReturnValue(AGENT);
+      vi.mocked(confirmOrDefault).mockResolvedValue(true);
+      const newKey = ("0x" + "b".repeat(64)) as `0x${string}`;
+      vi.mocked(generatePrivateKey).mockReturnValue(newKey);
+
+      await runSetup(["--create"]);
+
+      expect(confirmOrDefault).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining("keen_cedar_9807"),
+        }),
+        false,
+      );
+      expect(savePrivateKey).toHaveBeenCalledWith(newKey);
+    });
+
+    it("does not let --force bypass the prompt; aborts when declined", async () => {
+      vi.mocked(peekAgentWallet).mockReturnValue(AGENT);
+      vi.mocked(confirmOrDefault).mockResolvedValue(false);
+
+      await expect(runSetup(["--create", "--force"])).rejects.toThrow(
+        "process.exit(0)",
+      );
+
+      expect(savePrivateKey).not.toHaveBeenCalled();
     });
   });
 });

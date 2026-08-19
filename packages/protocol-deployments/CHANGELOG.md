@@ -1,5 +1,13 @@
 # @zoralabs/protocol-deployments
 
+## 0.7.6
+
+### Patch Changes
+
+- fbb389583: Bump viem to 2.53.1
+
+  Raise the pinned viem version from 2.22.12 to 2.53.1 across the monorepo to pick up newer chain definitions and support the latest x402 v2 client packages.
+
 ## 0.7.5
 
 ### Patch Changes
