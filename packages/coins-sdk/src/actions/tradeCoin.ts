@@ -98,6 +98,7 @@ export type TradeParameters = {
   recipient?: Address;
   signatures?: SignatureWithPermit<PermitStringAmounts>[];
   permitActiveSeconds?: number;
+  referrer?: string;
 };
 
 type SignPermitTypedData = (params: {
@@ -407,6 +408,7 @@ export async function createQuote(
       sender: tradeParameters.sender,
       recipient: tradeParameters.recipient || tradeParameters.sender,
       signatures: tradeParameters.signatures,
+      referrer: tradeParameters.referrer,
     },
   });
 
